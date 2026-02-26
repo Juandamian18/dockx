@@ -32,6 +32,12 @@
       <summary>Show now playing in minimal mode</summary>
       <description>When enabled, only the album cover icon is shown in dock and track controls move to the hover tooltip.</description>
     </key>
+
+    <key type="b" name="now-playing-cover-animation">
+      <default>true</default>
+      <summary>Animate now playing cover art</summary>
+      <description>When enabled, the now playing cover artwork has a subtle motion effect while music is playing.</description>
+    </key>
   </schema>
   <schema path="/io/elementary/dock/keybindings/" id="io.elementary.dock.keybindings">
     <key type="as" name="launch-dock-1">

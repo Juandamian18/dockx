@@ -7,6 +7,7 @@ public class Dock.NowPlayingItem : ContainerItem {
     private const string ACTION_GROUP_PREFIX = "now-playing";
     private const string ACTION_PREFIX = ACTION_GROUP_PREFIX + ".";
     private const string MINIMAL_MODE_ACTION = "minimal-mode";
+    private const string COVER_ANIMATION_ACTION = "cover-animation";
 
     private const int CONTROLS_WIDTH = 84;
     private const int MINIMAL_TOOLTIP_OFFSET_Y = -8;
@@ -25,6 +26,12 @@ public class Dock.NowPlayingItem : ContainerItem {
         private int _fixed_width = CARD_WIDTH;
         private int _fixed_height = Launcher.ICON_SIZE;
         private float _corner_radius = 10f;
+        private bool _animate_playback = false;
+        private uint _drift_tick_id = 0;
+        private double _drift_strength = 0.0;
+        private double _drift_x = 0.0;
+        private double _drift_y = 0.0;
+        private int64 _drift_start_us = 0;
 
         public Gdk.Paintable? paintable {
             get {
@@ -82,6 +89,25 @@ public class Dock.NowPlayingItem : ContainerItem {
             }
         }
 
+        public bool animate_playback {
+            get {
+                return _animate_playback;
+            }
+
+            set {
+                if (_animate_playback == value) {
+                    return;
+                }
+
+                _animate_playback = value;
+                ensure_drift_tick ();
+            }
+        }
+
+        ~FixedArtwork () {
+            stop_drift_tick ();
+        }
+
         public override void measure (
             Gtk.Orientation orientation,
             int for_size,
@@ -133,12 +159,22 @@ public class Dock.NowPlayingItem : ContainerItem {
                 return;
             }
 
-            var scale = double.max ((double) width / intrinsic_width, (double) height / intrinsic_height);
+            // Keep a small overscan while animating so the artwork can drift without exposing edges.
+            var overscan = 1.0 + (0.045 * _drift_strength);
+            var scale = double.max ((double) width / intrinsic_width, (double) height / intrinsic_height) * overscan;
             var draw_width = (double) intrinsic_width * scale;
             var draw_height = (double) intrinsic_height * scale;
 
+            var max_shift_x = (draw_width - width) / 2.0;
+            var max_shift_y = (draw_height - height) / 2.0;
+            var shift_x = max_shift_x * 0.48 * _drift_x;
+            var shift_y = max_shift_y * 0.48 * _drift_y;
+
             Graphene.Point offset = Graphene.Point ();
-            offset.init ((float) ((width - draw_width) / 2.0), (float) ((height - draw_height) / 2.0));
+            offset.init (
+                (float) (((width - draw_width) / 2.0) + shift_x),
+                (float) (((height - draw_height) / 2.0) + shift_y)
+            );
 
             snapshot.save ();
             snapshot.translate (offset);
@@ -146,6 +182,46 @@ public class Dock.NowPlayingItem : ContainerItem {
             snapshot.restore ();
 
             snapshot.pop ();
+        }
+
+        private void ensure_drift_tick () {
+            if (_drift_tick_id > 0) {
+                return;
+            }
+
+            _drift_tick_id = add_tick_callback ((widget, frame_clock) => {
+                if (_drift_start_us == 0) {
+                    _drift_start_us = frame_clock.get_frame_time ();
+                }
+
+                var elapsed = (frame_clock.get_frame_time () - _drift_start_us) / 1000000.0;
+                var target_strength = _animate_playback ? 1.0 : 0.0;
+                _drift_strength += (target_strength - _drift_strength) * 0.05;
+
+                _drift_x = Math.sin (elapsed * 0.28);
+                _drift_y = Math.cos (elapsed * 0.19) * 0.55;
+
+                if (!_animate_playback && _drift_strength <= 0.01) {
+                    _drift_strength = 0.0;
+                    _drift_x = 0.0;
+                    _drift_y = 0.0;
+                    _drift_tick_id = 0;
+                    queue_draw ();
+                    return Source.REMOVE;
+                }
+
+                queue_draw ();
+                return Source.CONTINUE;
+            });
+        }
+
+        private void stop_drift_tick () {
+            if (_drift_tick_id == 0) {
+                return;
+            }
+
+            remove_tick_callback (_drift_tick_id);
+            _drift_tick_id = 0;
         }
     }
 
@@ -193,6 +269,7 @@ public class Dock.NowPlayingItem : ContainerItem {
     public signal void mode_changed ();
 
     public bool minimal_mode { get; set; default = false; }
+    public bool cover_animation { get; set; default = true; }
 
     public MediaMonitor monitor { private get; construct; }
 
@@ -428,10 +505,12 @@ public class Dock.NowPlayingItem : ContainerItem {
 
         var action_group = new SimpleActionGroup ();
         action_group.add_action (new PropertyAction (MINIMAL_MODE_ACTION, this, "minimal-mode"));
+        action_group.add_action (new PropertyAction (COVER_ANIMATION_ACTION, this, "cover-animation"));
         insert_action_group (ACTION_GROUP_PREFIX, action_group);
 
         var menu = new Menu ();
         menu.append (_("Minimal Mode"), ACTION_PREFIX + MINIMAL_MODE_ACTION);
+        menu.append (_("Cover Animation"), ACTION_PREFIX + COVER_ANIMATION_ACTION);
         popover_menu = new Gtk.PopoverMenu.from_model (menu) {
             autohide = true,
             position = TOP
@@ -445,7 +524,11 @@ public class Dock.NowPlayingItem : ContainerItem {
         if (dock_settings.settings_schema.has_key ("now-playing-minimal-mode")) {
             dock_settings.bind ("now-playing-minimal-mode", this, "minimal-mode", DEFAULT);
         }
+        if (dock_settings.settings_schema.has_key ("now-playing-cover-animation")) {
+            dock_settings.bind ("now-playing-cover-animation", this, "cover-animation", DEFAULT);
+        }
         notify["minimal-mode"].connect (apply_mode);
+        notify["cover-animation"].connect (update_cover_animation);
         apply_mode ();
 
         monitor.changed.connect (sync_from_monitor);
@@ -503,6 +586,8 @@ public class Dock.NowPlayingItem : ContainerItem {
             }
         }
 
+        update_cover_animation ();
+
         // Refresh width-request binding transform on ContainerItem.
         notify_property ("icon-size");
         queue_resize ();
@@ -537,6 +622,7 @@ public class Dock.NowPlayingItem : ContainerItem {
 
     private void sync_from_monitor () {
         if (!monitor.has_player) {
+            update_cover_animation ();
             tooltip_text = null;
             if (visible_in_dock) {
                 visible_in_dock = false;
@@ -580,6 +666,7 @@ public class Dock.NowPlayingItem : ContainerItem {
         tooltip_play_pause_button.sensitive = monitor.can_play_pause;
         tooltip_previous_button.sensitive = monitor.can_go_previous;
         tooltip_next_button.sensitive = monitor.can_go_next;
+        update_cover_animation ();
 
         set_artwork (monitor.art_url);
 
@@ -587,6 +674,10 @@ public class Dock.NowPlayingItem : ContainerItem {
             visible_in_dock = true;
             playback_appeared ();
         }
+    }
+
+    private void update_cover_animation () {
+        cover.animate_playback = !minimal_mode && cover_animation && monitor.is_playing;
     }
 
     private void set_artwork (string? art_url) {
