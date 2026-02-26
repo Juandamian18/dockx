@@ -53,7 +53,7 @@ sudo apt install -y \
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/elementary/dock.git
+git clone https://github.com/Juandamian18/Dock-with-Now-Playing.git
 cd dock
 ```
 
@@ -141,7 +141,17 @@ Note: this overwrites the package-installed binary and may be reverted by system
 
 - Shows only square cover art at icon size.
 - Hover opens tooltip with track info and controls.
-- To enable or disable it: right click on Now Playing and toggle `Minimal Mode`.
+
+How to enable it:
+
+1. Start playback in a compatible player (so the Now Playing item appears in the dock).
+2. Right click the Now Playing item (cover/card in the dock).
+3. Click `Minimal Mode` in the context menu.
+
+How to disable it:
+
+1. Right click the Now Playing item again.
+2. Click `Minimal Mode` to untoggle it.
 
 ### Behavior
 

@@ -53,7 +53,7 @@ sudo apt install -y \
 ### 1. Clonar repositorio
 
 ```bash
-git clone https://github.com/elementary/dock.git
+git clone https://github.com/Juandamian18/Dock-with-Now-Playing.git
 cd dock
 ```
 
@@ -141,7 +141,17 @@ Nota: esto sobreescribe el binario instalado por paquetes y puede revertirse en 
 
 - Se muestra solo el cover con tamano de icono.
 - Al hacer hover se abre tooltip con titulo, artista y controles.
-- Para activarlo/desactivarlo: click derecho sobre Now Playing y marcar/desmarcar `Minimal Mode`.
+
+Como activarlo:
+
+1. Inicia reproduccion en un player compatible (para que aparezca el item Now Playing en el dock).
+2. Haz click derecho sobre el item de Now Playing (cover/tarjeta en el dock).
+3. Haz click en `Minimal Mode` en el menu contextual.
+
+Como desactivarlo:
+
+1. Haz click derecho nuevamente sobre el item de Now Playing.
+2. Haz click en `Minimal Mode` para desmarcarlo.
 
 ### Comportamiento
 
