@@ -314,9 +314,10 @@ backgrounditem .close-button {
 }
 
 .now-playing-tooltip .now-playing-seek trough {
-    background: alpha(@tooltip_fg_color, 0.12);
+    background: alpha(white, 0.30);
+    box-shadow: inset 0 0 0 1px alpha(white, 0.18);
 }
 
 .now-playing-tooltip .now-playing-seek highlight {
-    background: alpha(@tooltip_fg_color, 0.62);
+    background: alpha(white, 0.96);
 }

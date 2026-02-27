@@ -448,7 +448,8 @@ public class Dock.NowPlayingItem : ContainerItem {
             wrap = false,
             ellipsize = END,
             single_line_mode = true,
-            width_request = CARD_WIDTH
+            width_request = TEXT_WIDTH,
+            hexpand = true
         };
         tooltip_title_label.add_css_class ("now-playing-tooltip-title");
 
@@ -457,9 +458,19 @@ public class Dock.NowPlayingItem : ContainerItem {
             wrap = false,
             ellipsize = END,
             single_line_mode = true,
-            width_request = CARD_WIDTH
+            width_request = TEXT_WIDTH,
+            hexpand = true
         };
         tooltip_artist_label.add_css_class ("now-playing-tooltip-artist");
+
+        var tooltip_text_box = new Gtk.Box (VERTICAL, 1) {
+            hexpand = true,
+            halign = START,
+            valign = CENTER
+        };
+        tooltip_text_box.width_request = TEXT_WIDTH;
+        tooltip_text_box.append (tooltip_title_label);
+        tooltip_text_box.append (tooltip_artist_label);
 
         tooltip_previous_button = new Gtk.Button.from_icon_name ("media-skip-backward-symbolic");
         tooltip_previous_button.tooltip_text = _("Previous");
@@ -476,12 +487,22 @@ public class Dock.NowPlayingItem : ContainerItem {
         tooltip_next_button.clicked.connect (monitor.next);
 
         tooltip_controls = new Gtk.Box (HORIZONTAL, 6) {
-            halign = END
+            halign = END,
+            valign = CENTER,
+            homogeneous = true
         };
+        tooltip_controls.width_request = CONTROLS_WIDTH;
         tooltip_controls.add_css_class ("now-playing-controls");
         tooltip_controls.append (tooltip_previous_button);
         tooltip_controls.append (tooltip_play_pause_button);
         tooltip_controls.append (tooltip_next_button);
+
+        var tooltip_header = new Gtk.Box (HORIZONTAL, CONTENT_SPACING) {
+            hexpand = true,
+            width_request = CARD_WIDTH
+        };
+        tooltip_header.append (tooltip_text_box);
+        tooltip_header.append (tooltip_controls);
 
         tooltip_seek_scale = new Gtk.Scale.with_range (HORIZONTAL, 0, 1, 0.001) {
             draw_value = false,
@@ -492,10 +513,8 @@ public class Dock.NowPlayingItem : ContainerItem {
         tooltip_seek_scale.add_css_class ("now-playing-seek");
         tooltip_seek_scale.value_changed.connect (() => on_seek_value_changed (tooltip_seek_scale));
 
-        tooltip_box.append (tooltip_title_label);
-        tooltip_box.append (tooltip_artist_label);
+        tooltip_box.append (tooltip_header);
         tooltip_box.append (tooltip_seek_scale);
-        tooltip_box.append (tooltip_controls);
 
         minimal_hover_popover = new InteractiveTooltipPopover () {
             autohide = false,
