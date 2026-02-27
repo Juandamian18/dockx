@@ -23,6 +23,9 @@ private interface FreedesktopProperties : Object {
 
     [DBus (name = "GetAll")]
     public abstract async GLib.HashTable<string, GLib.Variant> get_all (string iface) throws GLib.Error;
+
+    [DBus (name = "Get")]
+    public abstract async GLib.Variant get (string iface, string property) throws GLib.Error;
 }
 
 [DBus (name = "org.mpris.MediaPlayer2.Player")]
@@ -58,6 +61,8 @@ public class Dock.MediaMonitor : Object {
         public bool can_seek { get; set; default = false; }
         public int64 position_us { get; set; default = 0; }
         public int64 length_us { get; set; default = 0; }
+        public bool has_position { get; set; default = false; }
+        public bool position_refresh_in_flight { get; set; default = false; }
 
         public PlayerState (string bus_name, FreedesktopProperties properties, MprisPlayer player) {
             Object (bus_name: bus_name, properties: properties, player: player);
@@ -129,6 +134,7 @@ public class Dock.MediaMonitor : Object {
                 if (bus_name != null && bus_name in players) {
                     unowned var state = players[bus_name];
                     state.position_us = 0;
+                    state.has_position = true;
                     publish_player (state);
                 }
             } catch (Error e) {
@@ -150,6 +156,7 @@ public class Dock.MediaMonitor : Object {
                 if (bus_name != null && bus_name in players) {
                     unowned var state = players[bus_name];
                     state.position_us = 0;
+                    state.has_position = true;
                     publish_player (state);
                 }
             } catch (Error e) {
@@ -179,6 +186,7 @@ public class Dock.MediaMonitor : Object {
             try {
                 player.seek.end (res);
                 state.position_us = clamped_target;
+                state.has_position = true;
                 publish_player (state);
             } catch (Error e) {
                 warning ("Failed to seek: %s", e.message);
@@ -254,11 +262,13 @@ public class Dock.MediaMonitor : Object {
                 }
 
                 update_player_state (state, changed_properties, invalidated_properties);
+                ensure_player_position (state);
                 refresh_active_player ();
             });
 
             var props = yield properties.get_all (MPRIS_PLAYER_IFACE);
             update_player_state (state, props, {});
+            ensure_player_position (state);
             refresh_active_player ();
         } catch (Error e) {
             warning ("Failed to track MPRIS player %s: %s", bus_name, e.message);
@@ -321,15 +331,20 @@ public class Dock.MediaMonitor : Object {
 
         if ("Position" in changed_properties) {
             state.position_us = (int64) changed_properties["Position"];
+            state.has_position = true;
         } else if ("Position" in invalidated_properties) {
             state.position_us = 0;
+            state.has_position = false;
         }
 
         if ("Metadata" in changed_properties) {
             var previous_track_id = state.track_id;
             parse_metadata (state, changed_properties["Metadata"]);
             if (state.track_id != previous_track_id && !("Position" in changed_properties)) {
+                // On track switch many players don't include Position in this update.
+                // Reset optimistically and mark as unknown so we can query it explicitly.
                 state.position_us = 0;
+                state.has_position = false;
             }
             state.position_us = clamp_position (state.position_us, state.length_us);
         } else if ("Metadata" in invalidated_properties) {
@@ -339,6 +354,7 @@ public class Dock.MediaMonitor : Object {
             state.track_id = null;
             state.length_us = 0;
             state.position_us = 0;
+            state.has_position = false;
         }
     }
 
@@ -438,6 +454,63 @@ public class Dock.MediaMonitor : Object {
         publish_player (chosen);
     }
 
+    private void ensure_player_position (PlayerState state) {
+        if (!state.can_seek || state.length_us <= 0 || state.has_position || state.position_refresh_in_flight) {
+            return;
+        }
+
+        state.position_refresh_in_flight = true;
+        refresh_player_position.begin (state);
+    }
+
+    private async void refresh_player_position (PlayerState state) {
+        try {
+            var value = yield state.properties.get (MPRIS_PLAYER_IFACE, "Position");
+
+            if (value.is_of_type (VariantType.VARIANT)) {
+                value = value.get_variant ();
+            }
+
+            var position = parse_position_variant (value);
+            if (position >= 0) {
+                state.position_us = clamp_position (position, state.length_us);
+                state.has_position = true;
+            }
+        } catch (Error e) {
+            debug ("Couldn't refresh MPRIS position for %s: %s", state.bus_name, e.message);
+        } finally {
+            state.position_refresh_in_flight = false;
+        }
+
+        if (!(state.bus_name in players)) {
+            return;
+        }
+
+        if (active_player == state.bus_name) {
+            publish_player (state);
+        }
+    }
+
+    private static int64 parse_position_variant (GLib.Variant value) {
+        if (value.is_of_type (VariantType.INT64)) {
+            return value.get_int64 ();
+        }
+
+        if (value.is_of_type (VariantType.UINT64)) {
+            return (int64) value.get_uint64 ();
+        }
+
+        if (value.is_of_type (VariantType.INT32)) {
+            return (int64) value.get_int32 ();
+        }
+
+        if (value.is_of_type (VariantType.UINT32)) {
+            return (int64) value.get_uint32 ();
+        }
+
+        return -1;
+    }
+
     private void publish_player (PlayerState? player) {
         if (player == null) {
             active_player = null;
@@ -492,6 +565,13 @@ public class Dock.MediaMonitor : Object {
             return;
         }
 
+        unowned var state = players[active_player];
+        if (!state.has_position) {
+            ensure_player_position (state);
+            stop_position_tick ();
+            return;
+        }
+
         if (position_tick_id > 0) {
             return;
         }
@@ -503,14 +583,20 @@ public class Dock.MediaMonitor : Object {
                 return Source.REMOVE;
             }
 
+            unowned var tick_state = players[active_player];
+            if (!tick_state.has_position) {
+                ensure_player_position (tick_state);
+                stop_position_tick ();
+                return Source.REMOVE;
+            }
+
             var now_us = get_monotonic_time ();
             var delta_us = now_us - position_tick_last_us;
             position_tick_last_us = now_us;
 
             if (delta_us > 0) {
-                unowned var state = players[active_player];
-                state.position_us = clamp_position (state.position_us + delta_us, state.length_us);
-                position_us = state.position_us;
+                tick_state.position_us = clamp_position (tick_state.position_us + delta_us, tick_state.length_us);
+                position_us = tick_state.position_us;
                 changed ();
             }
 
