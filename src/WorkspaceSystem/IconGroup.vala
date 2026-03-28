@@ -32,6 +32,31 @@ public class Dock.WorkspaceIconGroup : BaseIconGroup, WorkspaceItem {
     }
 
     construct {
+        var create_workspace_button = new Gtk.Button.with_label (_("Create Workspace")) {
+            halign = FILL
+        };
+        create_workspace_button.add_css_class ("flat");
+        create_workspace_button.clicked.connect (() => {
+            popover_menu.popdown ();
+            WorkspaceSystem.get_default ().create_workspace.begin ();
+        });
+
+        var menu_content = new Gtk.Box (VERTICAL, 0) {
+            margin_start = 6,
+            margin_end = 6,
+            margin_top = 6,
+            margin_bottom = 6
+        };
+        menu_content.append (create_workspace_button);
+
+        popover_menu = new Gtk.Popover () {
+            autohide = true,
+            position = TOP,
+            child = menu_content
+        };
+        popover_menu.set_offset (0, -1);
+        popover_menu.set_parent (this);
+
         workspace.bind_property ("is-active-workspace", this, "state", SYNC_CREATE, (binding, from_value, ref to_value) => {
             var new_val = from_value.get_boolean () ? State.ACTIVE : State.HIDDEN;
             to_value.set_enum (new_val);
@@ -40,10 +65,27 @@ public class Dock.WorkspaceIconGroup : BaseIconGroup, WorkspaceItem {
 
         workspace.removed.connect (() => removed ());
 
-        gesture_click.button = Gdk.BUTTON_PRIMARY;
-        gesture_click.released.connect (workspace.activate);
+        gesture_click.button = 0;
+        gesture_click.released.connect ((n_press, x, y) => {
+            switch (gesture_click.get_current_button ()) {
+                case Gdk.BUTTON_PRIMARY:
+                    workspace.activate ();
+                    break;
+                case Gdk.BUTTON_SECONDARY:
+                    popover_menu.popup ();
+                    popover_tooltip.popdown ();
+                    break;
+            }
+        });
 
         notify["moving"].connect (on_moving_changed);
+    }
+
+    ~WorkspaceIconGroup () {
+        if (popover_menu != null) {
+            popover_menu.unparent ();
+            popover_menu.dispose ();
+        }
     }
 
     private void on_moving_changed () {

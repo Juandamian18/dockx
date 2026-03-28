@@ -87,10 +87,43 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             null, null
         );
 
-        gesture_click.button = Gdk.BUTTON_PRIMARY;
+        var create_workspace_button = new Gtk.Button.with_label (_("Create Workspace")) {
+            halign = FILL
+        };
+        create_workspace_button.add_css_class ("flat");
+        create_workspace_button.clicked.connect (() => {
+            popover_menu.popdown ();
+            WorkspaceSystem.get_default ().create_workspace.begin ();
+        });
+
+        var menu_content = new Gtk.Box (VERTICAL, 0) {
+            margin_start = 6,
+            margin_end = 6,
+            margin_top = 6,
+            margin_bottom = 6
+        };
+        menu_content.append (create_workspace_button);
+
+        popover_menu = new Gtk.Popover () {
+            autohide = true,
+            position = TOP,
+            child = menu_content
+        };
+        popover_menu.set_offset (0, -1);
+        popover_menu.set_parent (this);
+
+        gesture_click.button = 0;
         gesture_click.released.connect ((n_press, x, y) => {
-            open_widlet_window ();
-            popover_tooltip.popdown ();
+            switch (gesture_click.get_current_button ()) {
+                case Gdk.BUTTON_PRIMARY:
+                    open_widlet_window ();
+                    popover_tooltip.popdown ();
+                    break;
+                case Gdk.BUTTON_SECONDARY:
+                    popover_menu.popup ();
+                    popover_tooltip.popdown ();
+                    break;
+            }
         });
     }
 
@@ -109,6 +142,11 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         if (usage_alert_settings_window != null) {
             usage_alert_settings_window.destroy ();
+        }
+
+        if (popover_menu != null) {
+            popover_menu.unparent ();
+            popover_menu.dispose ();
         }
     }
 

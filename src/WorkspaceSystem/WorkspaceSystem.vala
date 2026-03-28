@@ -28,6 +28,28 @@ public class Dock.WorkspaceSystem : Object {
         WindowSystem.get_default ().workspace_removed.connect (remove_workspace);
     }
 
+    public async void create_workspace () {
+        var n_workspaces = workspaces.length;
+        var index = WindowSystem.get_default ().active_workspace;
+
+        if (index == n_workspaces) {
+            GalaDBus.open_multitaksing_view ();
+            return;
+        }
+
+        var desktop_integration = WindowSystem.get_default ().desktop_integration;
+        if (desktop_integration == null) {
+            warning ("WorkspaceSystem.create_workspace: DesktopIntegration is null");
+            return;
+        }
+
+        try {
+            yield desktop_integration.activate_workspace (n_workspaces);
+        } catch (Error e) {
+            warning ("Couldn't switch to new workspace: %s", e.message);
+        }
+    }
+
     private Workspace add_workspace () {
         var workspace = new Workspace ();
         workspaces.add (workspace);
