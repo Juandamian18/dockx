@@ -23,6 +23,7 @@
 #if WORKSPACE_SWITCHER
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
+    private const string STOCK_WIDLET_KEY = "widlet-stock-enabled";
     private const string CPU_WIDLET_KEY = "widlet-cpu-enabled";
     private const string RAM_WIDLET_KEY = "widlet-ram-enabled";
     private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
@@ -31,6 +32,7 @@
     private const string TRASH_WIDLET_KEY = "widlet-trash-enabled";
     private const string WIDLET_ORDER_KEY = "widlet-order";
     private const string WIDLET_ID_WEATHER = "weather";
+    private const string WIDLET_ID_STOCK = "stock";
     private const string WIDLET_ID_CPU = "cpu";
     private const string WIDLET_ID_RAM = "ram";
     private const string WIDLET_ID_CPUTEMP = "cputemp";
@@ -42,6 +44,7 @@
     private Gtk.Separator separator;
     private bool workspace_widlet_enabled = true;
     private bool weather_widlet_enabled = true;
+    private bool stock_widlet_enabled = true;
     private bool cpu_widlet_enabled = true;
     private bool ram_widlet_enabled = true;
     private bool cputemp_widlet_enabled = true;
@@ -49,6 +52,7 @@
     private bool harddisk_widlet_enabled = true;
     private bool trash_widlet_enabled = true;
     private WeatherWidletItem weather_widlet_item;
+    private StockWidletItem stock_widlet_item;
     private CpuWidletItem cpu_widlet_item;
     private RamWidletItem ram_widlet_item;
     private CpuTempWidletItem cputemp_widlet_item;
@@ -79,6 +83,7 @@
 #if WORKSPACE_SWITCHER
         dynamic_workspace_item = new DynamicWorkspaceIcon ();
         weather_widlet_item = new WeatherWidletItem ();
+        stock_widlet_item = new StockWidletItem ();
         cpu_widlet_item = new CpuWidletItem ();
         ram_widlet_item = new RamWidletItem ();
         cputemp_widlet_item = new CpuTempWidletItem ();
@@ -116,6 +121,10 @@
         if (settings.settings_schema.has_key (WEATHER_WIDLET_KEY)) {
             weather_widlet_enabled = settings.get_boolean (WEATHER_WIDLET_KEY);
             settings.changed[WEATHER_WIDLET_KEY].connect (update_weather_widlet_state);
+        }
+        if (settings.settings_schema.has_key (STOCK_WIDLET_KEY)) {
+            stock_widlet_enabled = settings.get_boolean (STOCK_WIDLET_KEY);
+            settings.changed[STOCK_WIDLET_KEY].connect (update_stock_widlet_state);
         }
         if (settings.settings_schema.has_key (CPU_WIDLET_KEY)) {
             cpu_widlet_enabled = settings.get_boolean (CPU_WIDLET_KEY);
@@ -270,6 +279,7 @@
             WorkspaceSystem.get_default ().load.begin ();
             update_workspace_widlet_state ();
             update_weather_widlet_state ();
+            update_stock_widlet_state ();
             update_cpu_widlet_state ();
             update_ram_widlet_state ();
             update_cputemp_widlet_state ();
@@ -501,6 +511,9 @@
         if (item is WeatherWidletItem) {
             return ((WeatherWidletItem) item).get_dock_width ();
         }
+        if (item is StockWidletItem) {
+            return ((StockWidletItem) item).get_dock_width ();
+        }
 #endif
 
         return get_launcher_size ();
@@ -549,6 +562,10 @@
                 if (should_show_weather_widlet ()) {
                     position_item (weather_widlet_item, ref x);
                 }
+            } else if (widlet_id == WIDLET_ID_STOCK) {
+                if (should_show_stock_widlet ()) {
+                    position_item (stock_widlet_item, ref x);
+                }
             } else if (widlet_id == WIDLET_ID_CPU) {
                 if (should_show_cpu_widlet ()) {
                     position_item (cpu_widlet_item, ref x);
@@ -590,6 +607,10 @@
             if (widlet_id == WIDLET_ID_WEATHER) {
                 if (should_show_weather_widlet ()) {
                     total += get_item_width (weather_widlet_item);
+                }
+            } else if (widlet_id == WIDLET_ID_STOCK) {
+                if (should_show_stock_widlet ()) {
+                    total += get_item_width (stock_widlet_item);
                 }
             } else if (widlet_id == WIDLET_ID_CPU) {
                 if (should_show_cpu_widlet ()) {
@@ -637,6 +658,8 @@
 
             if (widlet_id == WIDLET_ID_WEATHER && should_show_weather_widlet ()) {
                 offset += get_item_width (weather_widlet_item);
+            } else if (widlet_id == WIDLET_ID_STOCK && should_show_stock_widlet ()) {
+                offset += get_item_width (stock_widlet_item);
             } else if (widlet_id == WIDLET_ID_CPU && should_show_cpu_widlet ()) {
                 offset += get_item_width (cpu_widlet_item);
             } else if (widlet_id == WIDLET_ID_RAM && should_show_ram_widlet ()) {
@@ -658,6 +681,7 @@
     private string[] get_widlet_order () {
         string[] order = {};
         bool has_weather = false;
+        bool has_stock = false;
         bool has_cpu = false;
         bool has_ram = false;
         bool has_cputemp = false;
@@ -672,6 +696,9 @@
                 if (widlet_id == WIDLET_ID_WEATHER && !has_weather) {
                     order += WIDLET_ID_WEATHER;
                     has_weather = true;
+                } else if (widlet_id == WIDLET_ID_STOCK && !has_stock) {
+                    order += WIDLET_ID_STOCK;
+                    has_stock = true;
                 } else if (widlet_id == WIDLET_ID_CPU && !has_cpu) {
                     order += WIDLET_ID_CPU;
                     has_cpu = true;
@@ -700,6 +727,9 @@
         if (!has_weather) {
             order += WIDLET_ID_WEATHER;
         }
+        if (!has_stock) {
+            order += WIDLET_ID_STOCK;
+        }
         if (!has_cpu) {
             order += WIDLET_ID_CPU;
         }
@@ -727,6 +757,10 @@
 
     private bool should_show_weather_widlet () {
         return weather_widlet_enabled;
+    }
+
+    private bool should_show_stock_widlet () {
+        return stock_widlet_enabled;
     }
 
     private bool should_show_cpu_widlet () {
@@ -762,6 +796,25 @@
 
         weather_widlet_item.visible = weather_widlet_enabled;
         weather_widlet_item.sensitive = weather_widlet_enabled;
+
+        reposition_items ();
+
+        resize_animation.easing = EASE_IN_OUT_QUAD;
+        resize_animation.duration = Granite.TRANSITION_DURATION_OPEN;
+        resize_animation.value_from = get_width ();
+        resize_animation.value_to = get_total_width ();
+        resize_animation.play ();
+    }
+
+    private void update_stock_widlet_state () {
+        if (settings.settings_schema.has_key (STOCK_WIDLET_KEY)) {
+            stock_widlet_enabled = settings.get_boolean (STOCK_WIDLET_KEY);
+        } else {
+            stock_widlet_enabled = true;
+        }
+
+        stock_widlet_item.visible = stock_widlet_enabled;
+        stock_widlet_item.sensitive = stock_widlet_enabled;
 
         reposition_items ();
 

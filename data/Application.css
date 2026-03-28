@@ -94,6 +94,10 @@ icongroup.weather-widlet-item {
     padding: 6px 6px 0 8px;
 }
 
+icongroup.stock-widlet-item {
+    padding: 6px 6px 0 8px;
+}
+
 icongroup .icon-group-bin {
     background: alpha(@base_color, 0.4);
     box-shadow:
@@ -499,6 +503,155 @@ icongroup.weather-widlet-item.minimal:active .icon-group-bin {
 .weather-widlet-item.minimal .weather-widlet-icon {
     margin-right: -4px;
     margin-bottom: -2px;
+}
+
+icongroup.stock-widlet-item .icon-group-bin,
+icongroup.stock-widlet-item.running .icon-group-bin,
+icongroup.stock-widlet-item:active .icon-group-bin {
+    border-radius: 11px;
+    background: linear-gradient(180deg, #101216 0%, #07090c 100%);
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.09),
+        inset 0 -1px 0 alpha(black, 0.42),
+        inset 0 0 0 1px alpha(white, 0.06),
+        0 6px 16px alpha(black, 0.32);
+}
+
+icongroup.stock-widlet-item.stock-trend-up .icon-group-bin {
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.09),
+        inset 0 -1px 0 alpha(black, 0.42),
+        inset 0 0 0 1px alpha(white, 0.06),
+        0 6px 16px alpha(black, 0.32);
+}
+
+icongroup.stock-widlet-item.stock-trend-down .icon-group-bin {
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.09),
+        inset 0 -1px 0 alpha(black, 0.42),
+        inset 0 0 0 1px alpha(white, 0.06),
+        0 6px 16px alpha(black, 0.32);
+}
+
+icongroup.stock-widlet-item.stock-trend-neutral .icon-group-bin {
+    background: linear-gradient(180deg, #101216 0%, #07090c 100%);
+}
+
+.stock-widlet-content {
+    min-height: 0;
+    border-radius: 11px;
+}
+
+.stock-widlet-top {
+    min-height: 0;
+}
+
+.stock-widlet-symbol,
+.stock-widlet-company,
+.stock-widlet-price,
+.stock-widlet-change {
+    color: white;
+    text-shadow: none;
+}
+
+.stock-widlet-symbol {
+    margin-top: -2px;
+    font-weight: 620;
+    font-size: 0.72em;
+    letter-spacing: 0.01em;
+    color: #9aa1ab;
+}
+
+.stock-widlet-company {
+    margin-top: -1px;
+    font-weight: 760;
+    font-size: 0.98em;
+    color: #ffffff;
+}
+
+.stock-widlet-price {
+    margin-top: -2px;
+    font-weight: 700;
+    font-size: 1.05em;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+}
+
+.stock-widlet-change {
+    margin-top: -1px;
+    font-weight: 560;
+    font-size: 0.84em;
+}
+
+.stock-widlet-logo-wrap {
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+    border-radius: 999px;
+    background: alpha(#0f1217, 0.55);
+    box-shadow:
+        inset 0 0 0 1px alpha(white, 0.12),
+        inset 0 -1px 1px alpha(black, 0.35);
+}
+
+.stock-widlet-logo {
+    border-radius: 999px;
+}
+
+.stock-widlet-logo-fallback {
+    border-radius: 999px;
+    background: alpha(white, 0.14);
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.22),
+        inset 0 -1px 0 alpha(black, 0.28);
+}
+
+.stock-widlet-logo-fallback-label {
+    margin-top: -1px;
+    font-weight: 760;
+    font-size: 0.72em;
+    color: #ff3a4f;
+}
+
+.stock-widlet-wave-bg {
+    border-radius: 0 0 11px 11px;
+    background: linear-gradient(
+        180deg,
+        alpha(#00ff66, 0.28) 0%,
+        alpha(#00ff66, 0.08) 65%,
+        alpha(#00ff66, 0.0) 100%
+    );
+}
+
+icongroup.stock-widlet-item.stock-trend-down .stock-widlet-wave-bg {
+    background: linear-gradient(
+        180deg,
+        alpha(#ff2438, 0.30) 0%,
+        alpha(#ff2438, 0.10) 65%,
+        alpha(#ff2438, 0.0) 100%
+    );
+}
+
+icongroup.stock-widlet-item.stock-trend-neutral .stock-widlet-wave-bg {
+    background: linear-gradient(
+        180deg,
+        alpha(#8ebaff, 0.20) 0%,
+        alpha(#8ebaff, 0.06) 65%,
+        alpha(#8ebaff, 0.0) 100%
+    );
+}
+
+.stock-change-up {
+    color: #17ff68;
+}
+
+.stock-change-down {
+    color: #ff3b52;
+}
+
+.stock-change-neutral {
+    color: alpha(white, 0.86);
 }
 
 icongroup.cpu-widlet-item .icon-group-bin,

@@ -6,6 +6,7 @@
 public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
+    private const string STOCK_WIDLET_KEY = "widlet-stock-enabled";
     private const string CPU_WIDLET_KEY = "widlet-cpu-enabled";
     private const string RAM_WIDLET_KEY = "widlet-ram-enabled";
     private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
@@ -23,6 +24,8 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WEATHER_SIM_CODE_KEY = "widlet-weather-sim-weather-code";
     private const string WEATHER_SIM_TEMPERATURE_KEY = "widlet-weather-sim-temperature";
     private const string WEATHER_SIM_HOUR_KEY = "widlet-weather-sim-hour";
+    private const string STOCK_SYMBOLS_KEY = "widlet-stock-symbols";
+    private const string STOCK_ROTATION_SECONDS_KEY = "widlet-stock-rotation-seconds";
     private const string CPU_ALERT_ENABLED_KEY = "widlet-cpu-alert-enabled";
     private const string CPU_ALERT_THRESHOLD_KEY = "widlet-cpu-alert-threshold";
     private const string RAM_ALERT_ENABLED_KEY = "widlet-ram-alert-enabled";
@@ -36,6 +39,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
     private const string WIDLET_ID_WORKSPACE = "workspace";
     private const string WIDLET_ID_WEATHER = "weather";
+    private const string WIDLET_ID_STOCK = "stock";
     private const string WIDLET_ID_CPU = "cpu";
     private const string WIDLET_ID_RAM = "ram";
     private const string WIDLET_ID_CPUTEMP = "cputemp";
@@ -48,6 +52,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private Gtk.Image image;
     private Gtk.Window? widlet_window = null;
     private Gtk.Window? weather_settings_window = null;
+    private Gtk.Window? stock_settings_window = null;
     private Gtk.Window? workspace_settings_window = null;
     private Gtk.Window? usage_alert_settings_window = null;
     private string usage_alert_settings_widlet_id = "";
@@ -134,6 +139,10 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         if (weather_settings_window != null) {
             weather_settings_window.destroy ();
+        }
+
+        if (stock_settings_window != null) {
+            stock_settings_window.destroy ();
         }
 
         if (workspace_settings_window != null) {
@@ -259,6 +268,15 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         "weather-overcast-symbolic",
                         _("Weather Widlet"),
                         _("Current weather card with city, temperature, icon and forecast panel."),
+                        true
+                    ));
+                    break;
+                case WIDLET_ID_STOCK:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "x-office-spreadsheet-symbolic",
+                        _("Stock Widlet"),
+                        _("Shows one stock at a time and rotates through your symbol list."),
                         true
                     ));
                     break;
@@ -505,6 +523,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             case WIDLET_ID_WEATHER:
                 key = WEATHER_WIDLET_KEY;
                 break;
+            case WIDLET_ID_STOCK:
+                key = STOCK_WIDLET_KEY;
+                break;
             case WIDLET_ID_CPU:
                 key = CPU_WIDLET_KEY;
                 break;
@@ -541,6 +562,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         switch (widlet_id) {
             case WIDLET_ID_WEATHER:
                 open_weather_settings_window ();
+                break;
+            case WIDLET_ID_STOCK:
+                open_stock_settings_window ();
                 break;
             case WIDLET_ID_CPU:
             case WIDLET_ID_RAM:
@@ -763,6 +787,187 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         attach_window_to_application (workspace_settings_window);
         workspace_settings_window.present ();
+    }
+
+    private void open_stock_settings_window () {
+        if (stock_settings_window != null) {
+            stock_settings_window.present ();
+            return;
+        }
+
+        var title = new Gtk.Label (_("Stock Widlet Settings")) {
+            xalign = 0
+        };
+        title.add_css_class ("title-3");
+
+        var subtitle = new Gtk.Label (_("Set the list of symbols and how many seconds each symbol stays visible before rotating.")) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        subtitle.add_css_class (Granite.CssClass.DIM);
+        subtitle.add_css_class ("widlet-settings-subtitle");
+
+        var symbols_entry = new Gtk.Entry () {
+            hexpand = true,
+            placeholder_text = _("Examples: TSLA, AAPL, NVDA")
+        };
+
+        if (dock_settings.settings_schema.has_key (STOCK_SYMBOLS_KEY)) {
+            symbols_entry.text = dock_settings.get_string (STOCK_SYMBOLS_KEY);
+        } else {
+            symbols_entry.text = "TSLA, AAPL, NVDA";
+            symbols_entry.sensitive = false;
+        }
+
+        var apply_symbols_button = new Gtk.Button.with_label (_("Apply")) {
+            halign = END
+        };
+        apply_symbols_button.add_css_class (Granite.CssClass.SUGGESTED);
+
+        var symbols_status = new Gtk.Label ("") {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        symbols_status.add_css_class (Granite.CssClass.DIM);
+        symbols_status.add_css_class (Granite.CssClass.SMALL);
+
+        var symbols_control = new Gtk.Box (HORIZONTAL, 8);
+        symbols_control.append (symbols_entry);
+        symbols_control.append (apply_symbols_button);
+
+        var rotation_spin = new Gtk.SpinButton.with_range (2, 300, 1) {
+            digits = 0,
+            numeric = true,
+            width_chars = 4
+        };
+        if (dock_settings.settings_schema.has_key (STOCK_ROTATION_SECONDS_KEY)) {
+            rotation_spin.value = dock_settings.get_int (STOCK_ROTATION_SECONDS_KEY);
+            rotation_spin.value_changed.connect (() => {
+                dock_settings.set_int (STOCK_ROTATION_SECONDS_KEY, (int) Math.round (rotation_spin.value));
+            });
+        } else {
+            rotation_spin.value = 8;
+            rotation_spin.sensitive = false;
+        }
+
+        var rotation_suffix = new Gtk.Label (_("seconds")) {
+            valign = CENTER
+        };
+        var rotation_control = new Gtk.Box (HORIZONTAL, 6) {
+            halign = END
+        };
+        rotation_control.append (rotation_spin);
+        rotation_control.append (rotation_suffix);
+
+        apply_symbols_button.clicked.connect (() => {
+            apply_stock_symbols_from_entry (symbols_entry, symbols_status);
+        });
+        symbols_entry.activate.connect (() => {
+            apply_stock_symbols_from_entry (symbols_entry, symbols_status);
+        });
+
+        var content = new Gtk.Box (VERTICAL, 10) {
+            margin_start = 16,
+            margin_end = 16,
+            margin_top = 16,
+            margin_bottom = 16,
+            width_request = 430
+        };
+        content.add_css_class ("widlet-settings-window");
+        content.append (title);
+        content.append (subtitle);
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (create_setting_row (
+            _("Symbols"),
+            _("Comma-separated symbols shown in rotation."),
+            symbols_control
+        ));
+        content.append (symbols_status);
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (create_setting_row (
+            _("Rotation Time"),
+            _("How long each symbol is displayed before switching."),
+            rotation_control
+        ));
+
+        stock_settings_window = new Gtk.Window () {
+            title = _("Stock Widlet Settings"),
+            child = content,
+            resizable = false,
+            modal = false,
+            hide_on_close = true
+        };
+
+        attach_window_to_application (stock_settings_window);
+        stock_settings_window.present ();
+    }
+
+    private void apply_stock_symbols_from_entry (Gtk.Entry symbols_entry, Gtk.Label status_label) {
+        if (!dock_settings.settings_schema.has_key (STOCK_SYMBOLS_KEY)) {
+            status_label.label = _("Stock symbols setting is unavailable.");
+            return;
+        }
+
+        var normalized = normalize_stock_symbol_input (symbols_entry.text);
+        if (normalized == "") {
+            status_label.label = _("Enter at least one valid symbol.");
+            return;
+        }
+
+        dock_settings.set_string (STOCK_SYMBOLS_KEY, normalized);
+        symbols_entry.text = normalized;
+        status_label.label = _("Stock symbols updated.");
+    }
+
+    private static string normalize_stock_symbol_input (string raw_input) {
+        string[] parsed = {};
+
+        foreach (var chunk in raw_input.split (",")) {
+            foreach (var token in chunk.split (";")) {
+                foreach (var piece in token.split (" ")) {
+                    var symbol = sanitize_stock_symbol (piece);
+                    if (symbol == "") {
+                        continue;
+                    }
+
+                    bool duplicate = false;
+                    foreach (var existing in parsed) {
+                        if (existing == symbol) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+
+                    if (!duplicate) {
+                        parsed += symbol;
+                    }
+                }
+            }
+        }
+
+        if (parsed.length == 0) {
+            return "";
+        }
+
+        return string.joinv (", ", parsed);
+    }
+
+    private static string sanitize_stock_symbol (string raw_symbol) {
+        var symbol = raw_symbol.strip ().up ();
+        if (symbol == "") {
+            return "";
+        }
+
+        try {
+            var regex = new Regex ("[^A-Z0-9\\.\\-\\^=]");
+            symbol = regex.replace (symbol, -1, 0, "");
+        } catch (Error e) {
+            warning ("Could not sanitize stock symbol '%s': %s", raw_symbol, e.message);
+        }
+
+        return symbol.strip ();
     }
 
     private void open_weather_settings_window () {
@@ -1033,6 +1238,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private string[] normalize_widlet_order (string[] raw_order) {
         string[] normalized = {};
         bool has_weather = false;
+        bool has_stock = false;
         bool has_cpu = false;
         bool has_ram = false;
         bool has_cputemp = false;
@@ -1046,6 +1252,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             if (widlet_id == WIDLET_ID_WEATHER && !has_weather) {
                 normalized += WIDLET_ID_WEATHER;
                 has_weather = true;
+            } else if (widlet_id == WIDLET_ID_STOCK && !has_stock) {
+                normalized += WIDLET_ID_STOCK;
+                has_stock = true;
             } else if (widlet_id == WIDLET_ID_CPU && !has_cpu) {
                 normalized += WIDLET_ID_CPU;
                 has_cpu = true;
@@ -1072,6 +1281,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         if (!has_weather) {
             normalized += WIDLET_ID_WEATHER;
+        }
+        if (!has_stock) {
+            normalized += WIDLET_ID_STOCK;
         }
         if (!has_cpu) {
             normalized += WIDLET_ID_CPU;
