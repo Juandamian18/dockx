@@ -40,5 +40,10 @@
     <file compressed="true">weather-icons/thunderstorms-overcast.png</file>
     <file compressed="true">weather-icons/thunderstorms.png</file>
     <file compressed="true">weather-icons/thunderstorms-hail.png</file>
+    <file compressed="true">widlet-icons/cpu-image.png</file>
+    <file compressed="true">widlet-icons/cputemp-image.png</file>
+    <file compressed="true">widlet-icons/gpu-image.png</file>
+    <file compressed="true">widlet-icons/harddisk-image.png</file>
+    <file compressed="true">widlet-icons/ram-image.png</file>
   </gresource>
 </gresources>

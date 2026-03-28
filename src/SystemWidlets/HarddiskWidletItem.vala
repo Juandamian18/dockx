@@ -1,0 +1,246 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0
+ * SPDX-FileCopyrightText: 2026 dockx contributors
+ */
+
+public class Dock.HarddiskWidletItem : ContainerItem {
+    private const uint REFRESH_INTERVAL_SECONDS = 1;
+
+    private Gtk.Label value_label;
+    private Gtk.Box fill_overlay;
+    private uint refresh_timeout_id = 0;
+    private string current_fill_class = "";
+    private bool has_previous_sample = false;
+    private uint64 previous_io_millis = 0;
+    private int64 previous_timestamp_ms = 0;
+
+    public HarddiskWidletItem () {
+        Object (disallow_dnd: true, group: Group.WORKSPACE);
+    }
+
+    construct {
+        add_css_class ("harddisk-widlet-item");
+
+        var title_label = new Gtk.Label ("DISK") {
+            xalign = 0
+        };
+        title_label.add_css_class ("usage-widlet-title");
+
+        value_label = new Gtk.Label ("--") {
+            xalign = 0.5f
+        };
+        value_label.add_css_class ("usage-widlet-value");
+
+        var top_spacer = new Gtk.Box (VERTICAL, 0) {
+            vexpand = true
+        };
+        var bottom_spacer = new Gtk.Box (VERTICAL, 0) {
+            vexpand = true
+        };
+
+        var text_box = new Gtk.Box (VERTICAL, 0) {
+            halign = FILL,
+            valign = FILL,
+            margin_start = 4,
+            margin_end = 4,
+            margin_top = 3,
+            margin_bottom = 3,
+            can_target = false
+        };
+        text_box.append (title_label);
+        text_box.append (top_spacer);
+        text_box.append (value_label);
+        text_box.append (bottom_spacer);
+
+        fill_overlay = new Gtk.Box (HORIZONTAL, 0) {
+            halign = FILL,
+            valign = END,
+            height_request = 22,
+            margin_start = -4,
+            margin_end = -4,
+            can_target = false
+        };
+        fill_overlay.add_css_class ("usage-widlet-fill");
+
+        var icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/harddisk-image.png") {
+            pixel_size = 50,
+            halign = END,
+            valign = END,
+            can_target = false
+        };
+        icon.add_css_class ("usage-widlet-icon");
+
+        var content = new Gtk.Overlay () {
+            child = new Gtk.Box (HORIZONTAL, 0),
+            overflow = HIDDEN
+        };
+        content.add_css_class ("usage-widlet-content");
+        content.add_overlay (fill_overlay);
+        content.set_measure_overlay (fill_overlay, false);
+        content.add_overlay (icon);
+        content.set_measure_overlay (icon, false);
+        content.add_overlay (text_box);
+        content.set_measure_overlay (text_box, false);
+
+        child = content;
+
+        refresh_usage ();
+        refresh_timeout_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
+            refresh_usage ();
+            return Source.CONTINUE;
+        });
+    }
+
+    ~HarddiskWidletItem () {
+        if (refresh_timeout_id != 0) {
+            Source.remove (refresh_timeout_id);
+            refresh_timeout_id = 0;
+        }
+    }
+
+    private void refresh_usage () {
+        int usage_percent = 0;
+        uint64 current_io_millis = 0;
+        var now_ms = GLib.get_monotonic_time () / 1000;
+
+        if (!read_total_disk_io_millis (out current_io_millis)) {
+            update_usage (0, false);
+            return;
+        }
+
+        if (has_previous_sample && now_ms > previous_timestamp_ms && current_io_millis >= previous_io_millis) {
+            var delta_io_millis = current_io_millis - previous_io_millis;
+            var delta_elapsed_millis = (uint64) (now_ms - previous_timestamp_ms);
+
+            if (delta_elapsed_millis > 0) {
+                usage_percent = clamp_percentage ((int) Math.round ((double) delta_io_millis * 100.0 / (double) delta_elapsed_millis));
+            }
+            update_usage (usage_percent, true);
+        } else {
+            update_usage (0, true);
+        }
+
+        previous_io_millis = current_io_millis;
+        previous_timestamp_ms = now_ms;
+        has_previous_sample = true;
+    }
+
+    private void update_usage (int usage_percent, bool has_data) {
+        if (has_data) {
+            value_label.label = "%d%%".printf (usage_percent);
+            tooltip_text = _("Disk activity %d%%").printf (usage_percent);
+            set_fill_class (get_fill_class_for_percentage (usage_percent));
+        } else {
+            value_label.label = "--";
+            tooltip_text = _("Disk activity unavailable");
+            set_fill_class ("usage-widlet-fill-unknown");
+        }
+    }
+
+    private void set_fill_class (string css_class) {
+        if (current_fill_class != "") {
+            fill_overlay.remove_css_class (current_fill_class);
+        }
+
+        fill_overlay.add_css_class (css_class);
+        current_fill_class = css_class;
+    }
+
+    private static string get_fill_class_for_percentage (int usage_percent) {
+        if (usage_percent >= 80) {
+            return "usage-widlet-fill-high";
+        }
+        if (usage_percent >= 50) {
+            return "usage-widlet-fill-medium";
+        }
+
+        return "usage-widlet-fill-low";
+    }
+
+    private static int clamp_percentage (int value) {
+        if (value < 0) {
+            return 0;
+        }
+        if (value > 100) {
+            return 100;
+        }
+
+        return value;
+    }
+
+    private static bool read_total_disk_io_millis (out uint64 total_io_millis) {
+        total_io_millis = 0;
+
+        string contents = "";
+        try {
+            if (!FileUtils.get_contents ("/proc/diskstats", out contents)) {
+                return false;
+            }
+        } catch (Error e) {
+            return false;
+        }
+
+        var found_device = false;
+
+        foreach (var raw_line in contents.split ("\n")) {
+            var line = raw_line.strip ();
+            if (line == "") {
+                continue;
+            }
+
+            string[] fields = {};
+            foreach (var raw_part in line.split (" ")) {
+                var part = raw_part.strip ();
+                if (part != "") {
+                    fields += part;
+                }
+            }
+
+            if (fields.length < 13) {
+                continue;
+            }
+
+            var device_name = fields[2];
+            if (!is_tracked_disk_device (device_name)) {
+                continue;
+            }
+
+            var io_time_text = fields[12];
+            if (!Regex.match_simple ("^[0-9]+$", io_time_text)) {
+                continue;
+            }
+
+            total_io_millis += uint64.parse (io_time_text);
+            found_device = true;
+        }
+
+        return found_device;
+    }
+
+    private static bool is_tracked_disk_device (string device_name) {
+        if (device_name.has_prefix ("loop") || device_name.has_prefix ("ram") || device_name.has_prefix ("zram")) {
+            return false;
+        }
+
+        if (Regex.match_simple ("^sd[a-z]+$", device_name)) {
+            return true;
+        }
+        if (Regex.match_simple ("^vd[a-z]+$", device_name)) {
+            return true;
+        }
+        if (Regex.match_simple ("^xvd[a-z]+$", device_name)) {
+            return true;
+        }
+        if (Regex.match_simple ("^nvme[0-9]+n[0-9]+$", device_name)) {
+            return true;
+        }
+        if (Regex.match_simple ("^mmcblk[0-9]+$", device_name)) {
+            return true;
+        }
+        if (Regex.match_simple ("^dm-[0-9]+$", device_name)) {
+            return true;
+        }
+
+        return false;
+    }
+}

@@ -6,6 +6,11 @@
 public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
+    private const string CPU_WIDLET_KEY = "widlet-cpu-enabled";
+    private const string RAM_WIDLET_KEY = "widlet-ram-enabled";
+    private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
+    private const string GPU_WIDLET_KEY = "widlet-gpu-enabled";
+    private const string HARDDISK_WIDLET_KEY = "widlet-harddisk-enabled";
     private const string WIDLET_ORDER_KEY = "widlet-order";
 
     private const string WEATHER_MINIMAL_MODE_KEY = "widlet-weather-minimal-mode";
@@ -20,6 +25,11 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
     private const string WIDLET_ID_WORKSPACE = "workspace";
     private const string WIDLET_ID_WEATHER = "weather";
+    private const string WIDLET_ID_CPU = "cpu";
+    private const string WIDLET_ID_RAM = "ram";
+    private const string WIDLET_ID_CPUTEMP = "cputemp";
+    private const string WIDLET_ID_GPU = "gpu";
+    private const string WIDLET_ID_HARDDISK = "harddisk";
 
     public int workspace_index { get { return WorkspaceSystem.get_default ().workspaces.length; } }
 
@@ -185,6 +195,51 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         true
                     ));
                     break;
+                case WIDLET_ID_CPU:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "utilities-system-monitor-symbolic",
+                        _("CPU Widlet"),
+                        _("Compact CPU usage meter with live percentage."),
+                        false
+                    ));
+                    break;
+                case WIDLET_ID_RAM:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "drive-harddisk-symbolic",
+                        _("RAM Widlet"),
+                        _("Compact memory usage meter with live percentage."),
+                        false
+                    ));
+                    break;
+                case WIDLET_ID_CPUTEMP:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "temperature-symbolic",
+                        _("CPU Temp Widlet"),
+                        _("Compact CPU temperature meter with live Celsius values."),
+                        false
+                    ));
+                    break;
+                case WIDLET_ID_GPU:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "video-display-symbolic",
+                        _("GPU Widlet"),
+                        _("Compact GPU usage meter with live percentage."),
+                        false
+                    ));
+                    break;
+                case WIDLET_ID_HARDDISK:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "drive-harddisk-symbolic",
+                        _("Hard Disk Widlet"),
+                        _("Compact disk usage meter with live percentage."),
+                        false
+                    ));
+                    break;
                 case WIDLET_ID_WORKSPACE:
                     widlet_list_box.append (create_widlet_store_row (
                         widlet_id,
@@ -213,6 +268,36 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         Gtk.Image icon;
         if (widlet_id == WIDLET_ID_WEATHER) {
             icon = new Gtk.Image.from_resource ("/io/elementary/dock/weather-icons/overcast.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_CPU) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/cpu-image.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_RAM) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/ram-image.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_CPUTEMP) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/cputemp-image.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_GPU) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/gpu-image.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_HARDDISK) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/harddisk-image.png") {
                 pixel_size = 22,
                 halign = CENTER,
                 valign = CENTER
@@ -333,7 +418,31 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     }
 
     private void bind_widlet_switch (string widlet_id, Gtk.Switch row_switch) {
-        string key = widlet_id == WIDLET_ID_WEATHER ? WEATHER_WIDLET_KEY : WORKSPACE_WIDLET_KEY;
+        string key = WORKSPACE_WIDLET_KEY;
+        switch (widlet_id) {
+            case WIDLET_ID_WEATHER:
+                key = WEATHER_WIDLET_KEY;
+                break;
+            case WIDLET_ID_CPU:
+                key = CPU_WIDLET_KEY;
+                break;
+            case WIDLET_ID_RAM:
+                key = RAM_WIDLET_KEY;
+                break;
+            case WIDLET_ID_CPUTEMP:
+                key = CPUTEMP_WIDLET_KEY;
+                break;
+            case WIDLET_ID_GPU:
+                key = GPU_WIDLET_KEY;
+                break;
+            case WIDLET_ID_HARDDISK:
+                key = HARDDISK_WIDLET_KEY;
+                break;
+            case WIDLET_ID_WORKSPACE:
+            default:
+                key = WORKSPACE_WIDLET_KEY;
+                break;
+        }
 
         if (dock_settings.settings_schema.has_key (key)) {
             dock_settings.bind (key, row_switch, "active", DEFAULT);
@@ -665,6 +774,11 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private string[] normalize_widlet_order (string[] raw_order) {
         string[] normalized = {};
         bool has_weather = false;
+        bool has_cpu = false;
+        bool has_ram = false;
+        bool has_cputemp = false;
+        bool has_gpu = false;
+        bool has_harddisk = false;
         bool has_workspace = false;
 
         foreach (var raw_id in raw_order) {
@@ -672,6 +786,21 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             if (widlet_id == WIDLET_ID_WEATHER && !has_weather) {
                 normalized += WIDLET_ID_WEATHER;
                 has_weather = true;
+            } else if (widlet_id == WIDLET_ID_CPU && !has_cpu) {
+                normalized += WIDLET_ID_CPU;
+                has_cpu = true;
+            } else if (widlet_id == WIDLET_ID_CPUTEMP && !has_cputemp) {
+                normalized += WIDLET_ID_CPUTEMP;
+                has_cputemp = true;
+            } else if (widlet_id == WIDLET_ID_RAM && !has_ram) {
+                normalized += WIDLET_ID_RAM;
+                has_ram = true;
+            } else if (widlet_id == WIDLET_ID_GPU && !has_gpu) {
+                normalized += WIDLET_ID_GPU;
+                has_gpu = true;
+            } else if (widlet_id == WIDLET_ID_HARDDISK && !has_harddisk) {
+                normalized += WIDLET_ID_HARDDISK;
+                has_harddisk = true;
             } else if (widlet_id == WIDLET_ID_WORKSPACE && !has_workspace) {
                 normalized += WIDLET_ID_WORKSPACE;
                 has_workspace = true;
@@ -680,6 +809,21 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         if (!has_weather) {
             normalized += WIDLET_ID_WEATHER;
+        }
+        if (!has_cpu) {
+            normalized += WIDLET_ID_CPU;
+        }
+        if (!has_cputemp) {
+            normalized += WIDLET_ID_CPUTEMP;
+        }
+        if (!has_ram) {
+            normalized += WIDLET_ID_RAM;
+        }
+        if (!has_gpu) {
+            normalized += WIDLET_ID_GPU;
+        }
+        if (!has_harddisk) {
+            normalized += WIDLET_ID_HARDDISK;
         }
         if (!has_workspace) {
             normalized += WIDLET_ID_WORKSPACE;

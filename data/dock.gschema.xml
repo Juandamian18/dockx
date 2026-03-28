@@ -39,8 +39,38 @@
       <description>When enabled, the weather widlet is shown in the dock widlet section.</description>
     </key>
 
+    <key type="b" name="widlet-cpu-enabled">
+      <default>true</default>
+      <summary>Show CPU widlet</summary>
+      <description>When enabled, the CPU widlet is shown in the dock widlet section.</description>
+    </key>
+
+    <key type="b" name="widlet-ram-enabled">
+      <default>true</default>
+      <summary>Show RAM widlet</summary>
+      <description>When enabled, the RAM widlet is shown in the dock widlet section.</description>
+    </key>
+
+    <key type="b" name="widlet-cputemp-enabled">
+      <default>true</default>
+      <summary>Show CPU temperature widlet</summary>
+      <description>When enabled, the CPU temperature widlet is shown in the dock widlet section.</description>
+    </key>
+
+    <key type="b" name="widlet-gpu-enabled">
+      <default>true</default>
+      <summary>Show GPU widlet</summary>
+      <description>When enabled, the GPU widlet is shown in the dock widlet section.</description>
+    </key>
+
+    <key type="b" name="widlet-harddisk-enabled">
+      <default>true</default>
+      <summary>Show hard disk widlet</summary>
+      <description>When enabled, the hard disk widlet is shown in the dock widlet section.</description>
+    </key>
+
     <key type="as" name="widlet-order">
-      <default>['weather', 'workspace']</default>
+      <default>['weather', 'cpu', 'cputemp', 'ram', 'gpu', 'harddisk', 'workspace']</default>
       <summary>Dock widlet order</summary>
       <description>Ordered list that controls how widlets are laid out in the dock area.</description>
     </key>

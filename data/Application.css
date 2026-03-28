@@ -501,6 +501,104 @@ icongroup.weather-widlet-item.minimal:active .icon-group-bin {
     margin-bottom: -2px;
 }
 
+icongroup.cpu-widlet-item .icon-group-bin,
+icongroup.cpu-widlet-item.running .icon-group-bin,
+icongroup.cpu-widlet-item:active .icon-group-bin,
+icongroup.cputemp-widlet-item .icon-group-bin,
+icongroup.cputemp-widlet-item.running .icon-group-bin,
+icongroup.cputemp-widlet-item:active .icon-group-bin,
+icongroup.ram-widlet-item .icon-group-bin,
+icongroup.ram-widlet-item.running .icon-group-bin,
+icongroup.ram-widlet-item:active .icon-group-bin,
+icongroup.gpu-widlet-item .icon-group-bin,
+icongroup.gpu-widlet-item.running .icon-group-bin,
+icongroup.gpu-widlet-item:active .icon-group-bin,
+icongroup.harddisk-widlet-item .icon-group-bin,
+icongroup.harddisk-widlet-item.running .icon-group-bin,
+icongroup.harddisk-widlet-item:active .icon-group-bin {
+    border-radius: 6px;
+    background: linear-gradient(to top, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.16),
+        inset 0 -1px 0 alpha(black, 0.22),
+        0 3px 10px alpha(black, 0.24);
+}
+
+.usage-widlet-content {
+    min-height: 0;
+    border-radius: 6px;
+}
+
+.usage-widlet-title,
+.usage-widlet-value {
+    color: white;
+}
+
+.usage-widlet-title {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.usage-widlet-value {
+    font-size: 19px;
+    font-weight: 200;
+    margin-bottom: 2px;
+    text-shadow: 1px 1px 3.3px alpha(black, 0.25);
+}
+
+.usage-widlet-icon {
+    opacity: 0.58;
+    margin-right: -13px;
+    margin-bottom: -3px;
+}
+
+.ram-widlet-item .usage-widlet-icon {
+    opacity: 0.5;
+    margin-right: -14px;
+    margin-bottom: -11px;
+}
+
+.cputemp-widlet-item .usage-widlet-icon {
+    opacity: 0.54;
+    margin-right: -13px;
+    margin-bottom: -8px;
+}
+
+.gpu-widlet-item .usage-widlet-icon {
+    opacity: 0.54;
+    margin-right: -13px;
+    margin-bottom: -8px;
+}
+
+.harddisk-widlet-item .usage-widlet-icon {
+    opacity: 0.5;
+    margin-right: -14px;
+    margin-bottom: -8px;
+}
+
+.usage-widlet-fill {
+    min-height: 22px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.usage-widlet-fill-low {
+    background: linear-gradient(to top, alpha(#5cde6b, 0.9) 0%, alpha(#737373, 0) 100%);
+}
+
+.usage-widlet-fill-medium {
+    background: linear-gradient(to top, alpha(#e98726, 0.9) 0%, alpha(#737373, 0) 100%);
+}
+
+.usage-widlet-fill-high {
+    background: linear-gradient(to top, alpha(#f21919, 0.9) 0%, alpha(#737373, 0) 100%);
+}
+
+.usage-widlet-fill-unknown {
+    background: linear-gradient(to top, alpha(white, 0.16) 0%, alpha(#737373, 0) 100%);
+}
+
 .weather-forecast-popover {
     min-width: 0;
 }
@@ -569,8 +667,6 @@ icongroup.weather-widlet-item.minimal:active .icon-group-bin {
     min-height: 32px;
     border-radius: 0;
     background: transparent;
-    margin-top: auto;
-    margin-bottom: auto;
     box-shadow: none;
 }
 
@@ -583,7 +679,7 @@ icongroup.weather-widlet-item.minimal:active .icon-group-bin {
 }
 
 .widlet-store-actions {
-    margin-start: 6px;
+    margin-left: 6px;
 }
 
 .widlet-store-actions button {
