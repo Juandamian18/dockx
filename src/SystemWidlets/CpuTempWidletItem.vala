@@ -5,6 +5,8 @@
 
 public class Dock.CpuTempWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 2;
+    private const int BASE_ICON_PIXEL_SIZE = 48;
+    private const int BASE_FILL_HEIGHT = 22;
 
     private class DetailsPopover : Gtk.Popover {
         class construct {
@@ -14,6 +16,7 @@ public class Dock.CpuTempWidletItem : ContainerItem {
 
     private Gtk.Label value_label;
     private Gtk.Box fill_overlay;
+    private Gtk.Image icon_image;
     private Gtk.Label details_temperature_value_label;
     private Gtk.Label details_state_value_label;
     private Gtk.Label details_source_value_label;
@@ -71,13 +74,13 @@ public class Dock.CpuTempWidletItem : ContainerItem {
         };
         fill_overlay.add_css_class ("usage-widlet-fill");
 
-        var icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/cputemp-image.png") {
-            pixel_size = 48,
+        icon_image = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/cputemp-image.png") {
+            pixel_size = BASE_ICON_PIXEL_SIZE,
             halign = END,
             valign = END,
             can_target = false
         };
-        icon.add_css_class ("usage-widlet-icon");
+        icon_image.add_css_class ("usage-widlet-icon");
 
         var content = new Gtk.Overlay () {
             child = new Gtk.Box (HORIZONTAL, 0),
@@ -86,8 +89,8 @@ public class Dock.CpuTempWidletItem : ContainerItem {
         content.add_css_class ("usage-widlet-content");
         content.add_overlay (fill_overlay);
         content.set_measure_overlay (fill_overlay, false);
-        content.add_overlay (icon);
-        content.set_measure_overlay (icon, false);
+        content.add_overlay (icon_image);
+        content.set_measure_overlay (icon_image, false);
         content.add_overlay (text_box);
         content.set_measure_overlay (text_box, false);
 
@@ -123,6 +126,8 @@ public class Dock.CpuTempWidletItem : ContainerItem {
 
         gesture_click.button = 0;
         gesture_click.released.connect (on_click_released);
+        notify["icon-size"].connect (update_size_variant);
+        update_size_variant ();
 
         refresh_temperature ();
         refresh_timeout_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
@@ -224,6 +229,32 @@ public class Dock.CpuTempWidletItem : ContainerItem {
 
         details_temperature_value_label.label = "%d°C".printf (current_temperature_c);
         details_state_value_label.label = get_temperature_state_label (current_temperature_c);
+    }
+
+    private void update_size_variant () {
+        remove_css_class ("widlet-size-small");
+        remove_css_class ("widlet-size-large");
+
+        if (icon_size <= 40) {
+            add_css_class ("widlet-size-small");
+        } else if (icon_size >= 56) {
+            add_css_class ("widlet-size-large");
+        }
+
+        var scale = (double) icon_size / 48.0;
+        icon_image.pixel_size = clamp_int ((int) Math.round (BASE_ICON_PIXEL_SIZE * scale), 30, 70);
+        fill_overlay.height_request = clamp_int ((int) Math.round (BASE_FILL_HEIGHT * scale), 16, 30);
+    }
+
+    private static int clamp_int (int value, int min, int max) {
+        if (value < min) {
+            return min;
+        }
+        if (value > max) {
+            return max;
+        }
+
+        return value;
     }
 
     private static string get_temperature_state_label (int temperature_c) {

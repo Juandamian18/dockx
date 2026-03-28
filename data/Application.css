@@ -556,6 +556,24 @@ icongroup.trash-widlet-item:active .icon-group-bin {
     text-shadow: 1px 1px 3.3px alpha(black, 0.25);
 }
 
+.widlet-size-small .usage-widlet-title {
+    font-size: 7px;
+}
+
+.widlet-size-small .usage-widlet-value {
+    font-size: 15px;
+    margin-bottom: 1px;
+}
+
+.widlet-size-large .usage-widlet-title {
+    font-size: 9px;
+}
+
+.widlet-size-large .usage-widlet-value {
+    font-size: 23px;
+    margin-bottom: 3px;
+}
+
 .usage-widlet-icon {
     opacity: 0.58;
     margin-right: -13px;
@@ -568,10 +586,30 @@ icongroup.trash-widlet-item:active .icon-group-bin {
     margin-bottom: -11px;
 }
 
+.widlet-size-small.ram-widlet-item .usage-widlet-icon {
+    margin-right: -10px;
+    margin-bottom: -7px;
+}
+
+.widlet-size-large.ram-widlet-item .usage-widlet-icon {
+    margin-right: -17px;
+    margin-bottom: -13px;
+}
+
 .cputemp-widlet-item .usage-widlet-icon {
     opacity: 0.54;
     margin-right: -13px;
     margin-bottom: -8px;
+}
+
+.widlet-size-small.cputemp-widlet-item .usage-widlet-icon {
+    margin-right: -9px;
+    margin-bottom: -4px;
+}
+
+.widlet-size-large.cputemp-widlet-item .usage-widlet-icon {
+    margin-right: -16px;
+    margin-bottom: -10px;
 }
 
 .gpu-widlet-item .usage-widlet-icon {
@@ -580,14 +618,42 @@ icongroup.trash-widlet-item:active .icon-group-bin {
     margin-bottom: -8px;
 }
 
+.widlet-size-small.gpu-widlet-item .usage-widlet-icon {
+    margin-right: -9px;
+    margin-bottom: -4px;
+}
+
+.widlet-size-large.gpu-widlet-item .usage-widlet-icon {
+    margin-right: -16px;
+    margin-bottom: -10px;
+}
+
 .harddisk-widlet-item .usage-widlet-icon {
     opacity: 0.5;
     margin-right: -14px;
     margin-bottom: -11px;
 }
 
+.widlet-size-small.harddisk-widlet-item .usage-widlet-icon {
+    margin-right: -10px;
+    margin-bottom: -7px;
+}
+
+.widlet-size-large.harddisk-widlet-item .usage-widlet-icon {
+    margin-right: -17px;
+    margin-bottom: -14px;
+}
+
 .trash-widlet-item .trash-widlet-icon {
     margin-bottom: -2px;
+}
+
+.widlet-size-small.trash-widlet-item .trash-widlet-icon {
+    margin-bottom: -1px;
+}
+
+.widlet-size-large.trash-widlet-item .trash-widlet-icon {
+    margin-bottom: -3px;
 }
 
 .usage-widlet-fill {

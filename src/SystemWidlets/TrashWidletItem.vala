@@ -11,6 +11,7 @@ public class Dock.TrashWidletItem : ContainerItem {
     private const string TRASH_URI = "trash:///";
     private const string TRASH_EMPTY_ICON = "/io/elementary/dock/widlet-icons/trash-empty-image.png";
     private const string TRASH_FULL_ICON = "/io/elementary/dock/widlet-icons/trash-full-image.png";
+    private const int ICON_PIXEL_SIZE = 44;
 
     private Gtk.Image icon_image;
     private SimpleAction empty_trash_action;
@@ -41,7 +42,9 @@ public class Dock.TrashWidletItem : ContainerItem {
         popover_menu.set_parent (this);
 
         icon_image = new Gtk.Image.from_resource (TRASH_EMPTY_ICON) {
-            pixel_size = 44,
+            pixel_size = ICON_PIXEL_SIZE,
+            width_request = ICON_PIXEL_SIZE,
+            height_request = ICON_PIXEL_SIZE,
             halign = CENTER,
             valign = CENTER,
             can_target = false
@@ -58,6 +61,8 @@ public class Dock.TrashWidletItem : ContainerItem {
 
         gesture_click.button = 0;
         gesture_click.released.connect (on_click_released);
+        notify["icon-size"].connect (update_size_variant);
+        update_size_variant ();
 
         refresh_trash_state ();
         refresh_timeout_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
@@ -125,8 +130,36 @@ public class Dock.TrashWidletItem : ContainerItem {
     private void refresh_trash_state () {
         trash_has_items = detect_trash_items ();
         icon_image.set_from_resource (trash_has_items ? TRASH_FULL_ICON : TRASH_EMPTY_ICON);
+        update_size_variant ();
         empty_trash_action.set_enabled (trash_has_items);
         tooltip_text = trash_has_items ? _("Trash (Contains files)") : _("Trash (Empty)");
+    }
+
+    private void update_size_variant () {
+        remove_css_class ("widlet-size-small");
+        remove_css_class ("widlet-size-large");
+
+        if (icon_size <= 40) {
+            add_css_class ("widlet-size-small");
+        } else if (icon_size >= 56) {
+            add_css_class ("widlet-size-large");
+        }
+
+        var scaled = clamp_int ((int) Math.round ((double) ICON_PIXEL_SIZE * (double) icon_size / 48.0), 32, 62);
+        icon_image.pixel_size = scaled;
+        icon_image.width_request = scaled;
+        icon_image.height_request = scaled;
+    }
+
+    private static int clamp_int (int value, int min, int max) {
+        if (value < min) {
+            return min;
+        }
+        if (value > max) {
+            return max;
+        }
+
+        return value;
     }
 
     private static bool detect_trash_items () {
