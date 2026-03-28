@@ -7,6 +7,9 @@ public class Dock.CpuWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 1;
     private const int BASE_ICON_PIXEL_SIZE = 42;
     private const int BASE_FILL_HEIGHT = 22;
+    private const string ALERT_ENABLED_KEY = "widlet-cpu-alert-enabled";
+    private const string ALERT_THRESHOLD_KEY = "widlet-cpu-alert-threshold";
+    private const int ALERT_DEFAULT_THRESHOLD = 90;
 
     private class DetailsPopover : Gtk.Popover {
         class construct {
@@ -26,6 +29,7 @@ public class Dock.CpuWidletItem : ContainerItem {
     private uint64 previous_idle = 0;
     private string current_fill_class = "";
     private int current_usage_percent = 0;
+    private WidletAlertController alert_controller;
 
     public CpuWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -33,6 +37,15 @@ public class Dock.CpuWidletItem : ContainerItem {
 
     construct {
         add_css_class ("cpu-widlet-item");
+        alert_controller = new WidletAlertController (
+            this,
+            ALERT_ENABLED_KEY,
+            ALERT_THRESHOLD_KEY,
+            "cpu",
+            _("CPU Widlet"),
+            _("CPU usage"),
+            "%"
+        );
 
         var title_label = new Gtk.Label ("CPU") {
             xalign = 0
@@ -152,6 +165,7 @@ public class Dock.CpuWidletItem : ContainerItem {
         uint64 total = 0;
         uint64 idle = 0;
         if (!read_cpu_sample (out total, out idle)) {
+            alert_controller.evaluate_int (0, false, ALERT_DEFAULT_THRESHOLD);
             return;
         }
 
@@ -175,6 +189,7 @@ public class Dock.CpuWidletItem : ContainerItem {
         value_label.label = "%d%%".printf (usage_percent);
         tooltip_text = "CPU %d%%".printf (usage_percent);
         set_fill_class (get_fill_class_for_percentage (usage_percent));
+        alert_controller.evaluate_int (usage_percent, true, ALERT_DEFAULT_THRESHOLD);
         refresh_details_labels ();
     }
 

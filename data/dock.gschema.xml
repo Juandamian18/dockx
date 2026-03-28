@@ -81,6 +81,66 @@
       <description>Ordered list that controls how widlets are laid out in the dock area.</description>
     </key>
 
+    <key type="b" name="widlet-cpu-alert-enabled">
+      <default>false</default>
+      <summary>Enable CPU widlet alerts</summary>
+      <description>When enabled, the CPU widlet sends an alert when usage exceeds the configured threshold.</description>
+    </key>
+
+    <key type="i" name="widlet-cpu-alert-threshold">
+      <default>90</default>
+      <summary>CPU widlet alert threshold</summary>
+      <description>CPU usage percentage required to trigger a CPU widlet alert.</description>
+    </key>
+
+    <key type="b" name="widlet-ram-alert-enabled">
+      <default>false</default>
+      <summary>Enable RAM widlet alerts</summary>
+      <description>When enabled, the RAM widlet sends an alert when usage exceeds the configured threshold.</description>
+    </key>
+
+    <key type="i" name="widlet-ram-alert-threshold">
+      <default>90</default>
+      <summary>RAM widlet alert threshold</summary>
+      <description>RAM usage percentage required to trigger a RAM widlet alert.</description>
+    </key>
+
+    <key type="b" name="widlet-cputemp-alert-enabled">
+      <default>false</default>
+      <summary>Enable CPU temperature widlet alerts</summary>
+      <description>When enabled, the CPU temperature widlet sends an alert when temperature exceeds the configured threshold.</description>
+    </key>
+
+    <key type="i" name="widlet-cputemp-alert-threshold">
+      <default>85</default>
+      <summary>CPU temperature widlet alert threshold</summary>
+      <description>CPU temperature in Celsius required to trigger a CPU temperature widlet alert.</description>
+    </key>
+
+    <key type="b" name="widlet-gpu-alert-enabled">
+      <default>false</default>
+      <summary>Enable GPU widlet alerts</summary>
+      <description>When enabled, the GPU widlet sends an alert when usage exceeds the configured threshold.</description>
+    </key>
+
+    <key type="i" name="widlet-gpu-alert-threshold">
+      <default>90</default>
+      <summary>GPU widlet alert threshold</summary>
+      <description>GPU usage percentage required to trigger a GPU widlet alert.</description>
+    </key>
+
+    <key type="b" name="widlet-harddisk-alert-enabled">
+      <default>false</default>
+      <summary>Enable hard disk widlet alerts</summary>
+      <description>When enabled, the hard disk widlet sends an alert when activity exceeds the configured threshold.</description>
+    </key>
+
+    <key type="i" name="widlet-harddisk-alert-threshold">
+      <default>90</default>
+      <summary>Hard disk widlet alert threshold</summary>
+      <description>Disk activity percentage required to trigger a hard disk widlet alert.</description>
+    </key>
+
     <key type="b" name="widlet-weather-minimal-mode">
       <default>false</default>
       <summary>Show weather widlet in minimal mode</summary>

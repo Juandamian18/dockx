@@ -7,6 +7,9 @@ public class Dock.RamWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 2;
     private const int BASE_ICON_PIXEL_SIZE = 50;
     private const int BASE_FILL_HEIGHT = 22;
+    private const string ALERT_ENABLED_KEY = "widlet-ram-alert-enabled";
+    private const string ALERT_THRESHOLD_KEY = "widlet-ram-alert-threshold";
+    private const int ALERT_DEFAULT_THRESHOLD = 90;
 
     private class DetailsPopover : Gtk.Popover {
         class construct {
@@ -27,6 +30,7 @@ public class Dock.RamWidletItem : ContainerItem {
     private uint64 current_total_kib = 0;
     private uint64 current_available_kib = 0;
     private bool has_memory_sample = false;
+    private WidletAlertController alert_controller;
 
     public RamWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -34,6 +38,15 @@ public class Dock.RamWidletItem : ContainerItem {
 
     construct {
         add_css_class ("ram-widlet-item");
+        alert_controller = new WidletAlertController (
+            this,
+            ALERT_ENABLED_KEY,
+            ALERT_THRESHOLD_KEY,
+            "ram",
+            _("RAM Widlet"),
+            _("RAM usage"),
+            "%"
+        );
 
         var title_label = new Gtk.Label ("RAM") {
             xalign = 0
@@ -153,6 +166,8 @@ public class Dock.RamWidletItem : ContainerItem {
         uint64 total_kib = 0;
         uint64 available_kib = 0;
         if (!read_memory_sample (out total_kib, out available_kib) || total_kib == 0) {
+            has_memory_sample = false;
+            alert_controller.evaluate_int (0, false, ALERT_DEFAULT_THRESHOLD);
             return;
         }
 
@@ -174,6 +189,7 @@ public class Dock.RamWidletItem : ContainerItem {
         value_label.label = "%d%%".printf (usage_percent);
         tooltip_text = "RAM %d%%".printf (usage_percent);
         set_fill_class (get_fill_class_for_percentage (usage_percent));
+        alert_controller.evaluate_int (usage_percent, true, ALERT_DEFAULT_THRESHOLD);
         refresh_details_labels ();
     }
 

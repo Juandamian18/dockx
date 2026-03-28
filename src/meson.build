@@ -28,6 +28,7 @@ sources = [
     'WindowSystem' / 'Window.vala',
     'WindowSystem' / 'WindowSystem.vala',
     'SystemWidlets' / 'CpuWidletItem.vala',
+    'SystemWidlets' / 'WidletAlertController.vala',
     'SystemWidlets' / 'CpuTempWidletItem.vala',
     'SystemWidlets' / 'GpuWidletItem.vala',
     'SystemWidlets' / 'HarddiskWidletItem.vala',

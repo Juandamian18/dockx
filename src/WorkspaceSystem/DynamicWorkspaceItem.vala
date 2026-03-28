@@ -23,6 +23,16 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WEATHER_SIM_CODE_KEY = "widlet-weather-sim-weather-code";
     private const string WEATHER_SIM_TEMPERATURE_KEY = "widlet-weather-sim-temperature";
     private const string WEATHER_SIM_HOUR_KEY = "widlet-weather-sim-hour";
+    private const string CPU_ALERT_ENABLED_KEY = "widlet-cpu-alert-enabled";
+    private const string CPU_ALERT_THRESHOLD_KEY = "widlet-cpu-alert-threshold";
+    private const string RAM_ALERT_ENABLED_KEY = "widlet-ram-alert-enabled";
+    private const string RAM_ALERT_THRESHOLD_KEY = "widlet-ram-alert-threshold";
+    private const string CPUTEMP_ALERT_ENABLED_KEY = "widlet-cputemp-alert-enabled";
+    private const string CPUTEMP_ALERT_THRESHOLD_KEY = "widlet-cputemp-alert-threshold";
+    private const string GPU_ALERT_ENABLED_KEY = "widlet-gpu-alert-enabled";
+    private const string GPU_ALERT_THRESHOLD_KEY = "widlet-gpu-alert-threshold";
+    private const string HARDDISK_ALERT_ENABLED_KEY = "widlet-harddisk-alert-enabled";
+    private const string HARDDISK_ALERT_THRESHOLD_KEY = "widlet-harddisk-alert-threshold";
 
     private const string WIDLET_ID_WORKSPACE = "workspace";
     private const string WIDLET_ID_WEATHER = "weather";
@@ -39,6 +49,8 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private Gtk.Window? widlet_window = null;
     private Gtk.Window? weather_settings_window = null;
     private Gtk.Window? workspace_settings_window = null;
+    private Gtk.Window? usage_alert_settings_window = null;
+    private string usage_alert_settings_widlet_id = "";
     private Gtk.Box? widlet_list_box = null;
     private string[] widlet_order = {};
     private static Soup.Session? geocoding_session = null;
@@ -93,6 +105,10 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         if (workspace_settings_window != null) {
             workspace_settings_window.destroy ();
+        }
+
+        if (usage_alert_settings_window != null) {
+            usage_alert_settings_window.destroy ();
         }
     }
 
@@ -214,7 +230,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         "utilities-system-monitor-symbolic",
                         _("CPU Widlet"),
                         _("Compact CPU usage meter with live percentage."),
-                        false
+                        true
                     ));
                     break;
                 case WIDLET_ID_RAM:
@@ -223,7 +239,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         "drive-harddisk-symbolic",
                         _("RAM Widlet"),
                         _("Compact memory usage meter with live percentage."),
-                        false
+                        true
                     ));
                     break;
                 case WIDLET_ID_CPUTEMP:
@@ -232,7 +248,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         "temperature-symbolic",
                         _("CPU Temp Widlet"),
                         _("Compact CPU temperature meter with live Celsius values."),
-                        false
+                        true
                     ));
                     break;
                 case WIDLET_ID_GPU:
@@ -241,7 +257,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         "video-display-symbolic",
                         _("GPU Widlet"),
                         _("Compact GPU usage meter with live percentage."),
-                        false
+                        true
                     ));
                     break;
                 case WIDLET_ID_HARDDISK:
@@ -250,7 +266,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         "drive-harddisk-symbolic",
                         _("Hard Disk Widlet"),
                         _("Compact disk usage meter with live percentage."),
-                        false
+                        true
                     ));
                     break;
                 case WIDLET_ID_TRASH:
@@ -488,12 +504,186 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             case WIDLET_ID_WEATHER:
                 open_weather_settings_window ();
                 break;
+            case WIDLET_ID_CPU:
+            case WIDLET_ID_RAM:
+            case WIDLET_ID_CPUTEMP:
+            case WIDLET_ID_GPU:
+            case WIDLET_ID_HARDDISK:
+                open_usage_alert_settings_window (widlet_id);
+                break;
             case WIDLET_ID_WORKSPACE:
                 open_workspace_settings_window ();
                 break;
             default:
                 break;
         }
+    }
+
+    private void open_usage_alert_settings_window (string widlet_id) {
+        var alert_title = _("Widlet Alerts");
+        var alert_subtitle = _("Configure threshold-based alerts for this widlet.");
+        var metric_label = _("Usage");
+        var unit_label = "%";
+        var enabled_key = "";
+        var threshold_key = "";
+        int threshold_min = 1;
+        int threshold_max = 100;
+        int threshold_default = 90;
+
+        switch (widlet_id) {
+            case WIDLET_ID_CPU:
+                alert_title = _("CPU Widlet Alerts");
+                alert_subtitle = _("Trigger an alert when CPU usage goes above your selected threshold.");
+                metric_label = _("CPU usage");
+                enabled_key = CPU_ALERT_ENABLED_KEY;
+                threshold_key = CPU_ALERT_THRESHOLD_KEY;
+                threshold_default = 90;
+                break;
+            case WIDLET_ID_RAM:
+                alert_title = _("RAM Widlet Alerts");
+                alert_subtitle = _("Trigger an alert when RAM usage goes above your selected threshold.");
+                metric_label = _("RAM usage");
+                enabled_key = RAM_ALERT_ENABLED_KEY;
+                threshold_key = RAM_ALERT_THRESHOLD_KEY;
+                threshold_default = 90;
+                break;
+            case WIDLET_ID_CPUTEMP:
+                alert_title = _("CPU Temp Widlet Alerts");
+                alert_subtitle = _("Trigger an alert when CPU temperature goes above your selected threshold.");
+                metric_label = _("CPU temperature");
+                enabled_key = CPUTEMP_ALERT_ENABLED_KEY;
+                threshold_key = CPUTEMP_ALERT_THRESHOLD_KEY;
+                unit_label = "°C";
+                threshold_min = 30;
+                threshold_max = 120;
+                threshold_default = 85;
+                break;
+            case WIDLET_ID_GPU:
+                alert_title = _("GPU Widlet Alerts");
+                alert_subtitle = _("Trigger an alert when GPU usage goes above your selected threshold.");
+                metric_label = _("GPU usage");
+                enabled_key = GPU_ALERT_ENABLED_KEY;
+                threshold_key = GPU_ALERT_THRESHOLD_KEY;
+                threshold_default = 90;
+                break;
+            case WIDLET_ID_HARDDISK:
+                alert_title = _("Disk Widlet Alerts");
+                alert_subtitle = _("Trigger an alert when disk activity goes above your selected threshold.");
+                metric_label = _("Disk activity");
+                enabled_key = HARDDISK_ALERT_ENABLED_KEY;
+                threshold_key = HARDDISK_ALERT_THRESHOLD_KEY;
+                threshold_default = 90;
+                break;
+            default:
+                return;
+        }
+
+        if (usage_alert_settings_window != null) {
+            if (usage_alert_settings_widlet_id == widlet_id) {
+                usage_alert_settings_window.present ();
+                return;
+            }
+
+            usage_alert_settings_window.destroy ();
+            usage_alert_settings_window = null;
+            usage_alert_settings_widlet_id = "";
+        }
+
+        var alerts_switch = new Gtk.Switch () {
+            halign = END,
+            valign = CENTER
+        };
+
+        if (dock_settings.settings_schema.has_key (enabled_key)) {
+            dock_settings.bind (enabled_key, alerts_switch, "active", DEFAULT);
+        } else {
+            alerts_switch.active = false;
+            alerts_switch.sensitive = false;
+        }
+
+        var threshold_spin = new Gtk.SpinButton.with_range (threshold_min, threshold_max, 1) {
+            digits = 0,
+            numeric = true,
+            width_chars = 4
+        };
+
+        if (dock_settings.settings_schema.has_key (threshold_key)) {
+            threshold_spin.value = dock_settings.get_int (threshold_key);
+            threshold_spin.value_changed.connect (() => {
+                dock_settings.set_int (threshold_key, (int) Math.round (threshold_spin.value));
+            });
+        } else {
+            threshold_spin.value = threshold_default;
+            threshold_spin.sensitive = false;
+        }
+
+        var unit = new Gtk.Label (unit_label) {
+            valign = CENTER
+        };
+
+        var threshold_control = new Gtk.Box (HORIZONTAL, 6) {
+            halign = END
+        };
+        threshold_control.append (threshold_spin);
+        threshold_control.append (unit);
+
+        var title = new Gtk.Label (alert_title) {
+            xalign = 0
+        };
+        title.add_css_class ("title-3");
+
+        var subtitle = new Gtk.Label (alert_subtitle) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        subtitle.add_css_class (Granite.CssClass.DIM);
+        subtitle.add_css_class ("widlet-settings-subtitle");
+
+        var info = new Gtk.Label (_("When the value crosses the threshold, the widlet blinks red and sends a dock notification.")) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        info.add_css_class (Granite.CssClass.DIM);
+        info.add_css_class (Granite.CssClass.SMALL);
+
+        var content = new Gtk.Box (VERTICAL, 10) {
+            margin_start = 16,
+            margin_end = 16,
+            margin_top = 16,
+            margin_bottom = 16,
+            width_request = 420
+        };
+        content.add_css_class ("widlet-settings-window");
+        content.append (title);
+        content.append (subtitle);
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (create_setting_row (
+            _("Enable Alerts"),
+            _("Turn on threshold alerts for this widlet."),
+            alerts_switch
+        ));
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (create_setting_row (
+            _("Alert Threshold"),
+            _("Send an alert when %s reaches this value or higher.").printf (metric_label),
+            threshold_control
+        ));
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (info);
+
+        usage_alert_settings_window = new Gtk.Window () {
+            title = alert_title,
+            child = content,
+            resizable = false,
+            modal = false,
+            hide_on_close = true
+        };
+        usage_alert_settings_widlet_id = widlet_id;
+
+        attach_window_to_application (usage_alert_settings_window);
+        usage_alert_settings_window.present ();
     }
 
     private void open_workspace_settings_window () {

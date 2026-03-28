@@ -7,6 +7,9 @@ public class Dock.HarddiskWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 1;
     private const int BASE_ICON_PIXEL_SIZE = 50;
     private const int BASE_FILL_HEIGHT = 22;
+    private const string ALERT_ENABLED_KEY = "widlet-harddisk-alert-enabled";
+    private const string ALERT_THRESHOLD_KEY = "widlet-harddisk-alert-threshold";
+    private const int ALERT_DEFAULT_THRESHOLD = 90;
 
     private class DetailsPopover : Gtk.Popover {
         class construct {
@@ -29,6 +32,7 @@ public class Dock.HarddiskWidletItem : ContainerItem {
     private bool has_activity_data = false;
     private uint current_tracked_devices = 0;
     private uint64 current_busy_millis_per_second = 0;
+    private WidletAlertController alert_controller;
 
     public HarddiskWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -36,6 +40,15 @@ public class Dock.HarddiskWidletItem : ContainerItem {
 
     construct {
         add_css_class ("harddisk-widlet-item");
+        alert_controller = new WidletAlertController (
+            this,
+            ALERT_ENABLED_KEY,
+            ALERT_THRESHOLD_KEY,
+            "harddisk",
+            _("Disk Widlet"),
+            _("Disk activity"),
+            "%"
+        );
 
         var title_label = new Gtk.Label ("DISK") {
             xalign = 0
@@ -201,6 +214,7 @@ public class Dock.HarddiskWidletItem : ContainerItem {
             set_fill_class ("usage-widlet-fill-unknown");
         }
 
+        alert_controller.evaluate_int (usage_percent, has_data, ALERT_DEFAULT_THRESHOLD);
         refresh_details_labels ();
     }
 

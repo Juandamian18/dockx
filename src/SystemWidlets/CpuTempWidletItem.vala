@@ -7,6 +7,9 @@ public class Dock.CpuTempWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 2;
     private const int BASE_ICON_PIXEL_SIZE = 48;
     private const int BASE_FILL_HEIGHT = 22;
+    private const string ALERT_ENABLED_KEY = "widlet-cputemp-alert-enabled";
+    private const string ALERT_THRESHOLD_KEY = "widlet-cputemp-alert-threshold";
+    private const int ALERT_DEFAULT_THRESHOLD = 85;
 
     private class DetailsPopover : Gtk.Popover {
         class construct {
@@ -25,6 +28,7 @@ public class Dock.CpuTempWidletItem : ContainerItem {
     private int current_temperature_c = 0;
     private bool has_temperature_data = false;
     private string current_sensor_source = "Unavailable";
+    private WidletAlertController alert_controller;
 
     public CpuTempWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -32,6 +36,15 @@ public class Dock.CpuTempWidletItem : ContainerItem {
 
     construct {
         add_css_class ("cputemp-widlet-item");
+        alert_controller = new WidletAlertController (
+            this,
+            ALERT_ENABLED_KEY,
+            ALERT_THRESHOLD_KEY,
+            "cputemp",
+            _("CPU Temp Widlet"),
+            _("CPU temperature"),
+            "°C"
+        );
 
         var title_label = new Gtk.Label ("TEMP") {
             xalign = 0
@@ -169,6 +182,7 @@ public class Dock.CpuTempWidletItem : ContainerItem {
             current_sensor_source = "Unavailable";
         }
 
+        alert_controller.evaluate_int (temperature_c, has_data, ALERT_DEFAULT_THRESHOLD);
         refresh_details_labels ();
     }
 

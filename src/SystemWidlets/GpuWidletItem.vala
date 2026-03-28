@@ -7,6 +7,9 @@ public class Dock.GpuWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 2;
     private const int BASE_ICON_PIXEL_SIZE = 50;
     private const int BASE_FILL_HEIGHT = 22;
+    private const string ALERT_ENABLED_KEY = "widlet-gpu-alert-enabled";
+    private const string ALERT_THRESHOLD_KEY = "widlet-gpu-alert-threshold";
+    private const int ALERT_DEFAULT_THRESHOLD = 90;
 
     private class DetailsPopover : Gtk.Popover {
         class construct {
@@ -25,6 +28,7 @@ public class Dock.GpuWidletItem : ContainerItem {
     private int current_usage_percent = 0;
     private bool has_usage_data = false;
     private string current_source_label = "Unavailable";
+    private WidletAlertController alert_controller;
 
     public GpuWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -32,6 +36,15 @@ public class Dock.GpuWidletItem : ContainerItem {
 
     construct {
         add_css_class ("gpu-widlet-item");
+        alert_controller = new WidletAlertController (
+            this,
+            ALERT_ENABLED_KEY,
+            ALERT_THRESHOLD_KEY,
+            "gpu",
+            _("GPU Widlet"),
+            _("GPU usage"),
+            "%"
+        );
 
         var title_label = new Gtk.Label ("GPU") {
             xalign = 0
@@ -169,6 +182,7 @@ public class Dock.GpuWidletItem : ContainerItem {
             current_source_label = "Unavailable";
         }
 
+        alert_controller.evaluate_int (usage_percent, has_data, ALERT_DEFAULT_THRESHOLD);
         refresh_details_labels ();
     }
 
