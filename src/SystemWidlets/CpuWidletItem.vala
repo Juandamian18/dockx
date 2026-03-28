@@ -6,13 +6,23 @@
 public class Dock.CpuWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 1;
 
+    private class DetailsPopover : Gtk.Popover {
+        class construct {
+            set_css_name ("tooltip");
+        }
+    }
+
     private Gtk.Label value_label;
     private Gtk.Box fill_overlay;
+    private Gtk.Label details_usage_value_label;
+    private Gtk.Label details_load_value_label;
+    private Gtk.Label details_cores_value_label;
     private uint refresh_timeout_id = 0;
     private bool has_previous_sample = false;
     private uint64 previous_total = 0;
     private uint64 previous_idle = 0;
     private string current_fill_class = "";
+    private int current_usage_percent = 0;
 
     public CpuWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -84,6 +94,37 @@ public class Dock.CpuWidletItem : ContainerItem {
 
         child = content;
 
+        var details_title = new Gtk.Label (_("CPU Details")) {
+            xalign = 0
+        };
+        details_title.add_css_class ("widlet-details-title");
+
+        var details_grid = create_details_grid ();
+
+        var details_content = new Gtk.Box (VERTICAL, 8) {
+            margin_start = 10,
+            margin_end = 10,
+            margin_top = 8,
+            margin_bottom = 8,
+            width_request = 250
+        };
+        details_content.add_css_class ("widlet-details-popover");
+        details_content.append (details_title);
+        details_content.append (new Gtk.Separator (HORIZONTAL));
+        details_content.append (details_grid);
+
+        popover_menu = new DetailsPopover () {
+            autohide = true,
+            position = TOP,
+            has_arrow = false,
+            child = details_content
+        };
+        popover_menu.set_offset (0, -1);
+        popover_menu.set_parent (this);
+
+        gesture_click.button = 0;
+        gesture_click.released.connect (on_click_released);
+
         update_usage (0);
         refresh_usage ();
         refresh_timeout_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
@@ -97,6 +138,9 @@ public class Dock.CpuWidletItem : ContainerItem {
             Source.remove (refresh_timeout_id);
             refresh_timeout_id = 0;
         }
+
+        popover_menu.unparent ();
+        popover_menu.dispose ();
     }
 
     private void refresh_usage () {
@@ -122,9 +166,74 @@ public class Dock.CpuWidletItem : ContainerItem {
     }
 
     private void update_usage (int usage_percent) {
+        current_usage_percent = usage_percent;
         value_label.label = "%d%%".printf (usage_percent);
         tooltip_text = "CPU %d%%".printf (usage_percent);
         set_fill_class (get_fill_class_for_percentage (usage_percent));
+        refresh_details_labels ();
+    }
+
+    private void on_click_released (int n_press, double x, double y) {
+        var current_button = gesture_click.get_current_button ();
+        if (current_button != Gdk.BUTTON_PRIMARY && current_button != Gdk.BUTTON_SECONDARY) {
+            return;
+        }
+
+        if (popover_menu.visible) {
+            popover_menu.popdown ();
+            return;
+        }
+
+        refresh_details_labels ();
+        popover_tooltip.popdown ();
+        popover_menu.popup ();
+    }
+
+    private Gtk.Grid create_details_grid () {
+        var grid = new Gtk.Grid () {
+            column_spacing = 14,
+            row_spacing = 6
+        };
+        grid.add_css_class ("widlet-details-grid");
+
+        add_details_row (grid, 0, _("Usage"), out details_usage_value_label);
+        add_details_row (grid, 1, _("Load (1/5/15m)"), out details_load_value_label);
+        add_details_row (grid, 2, _("Logical Cores"), out details_cores_value_label);
+
+        return grid;
+    }
+
+    private static void add_details_row (Gtk.Grid grid, int row, string key, out Gtk.Label value_label) {
+        var key_label = new Gtk.Label (key) {
+            xalign = 0,
+            halign = START
+        };
+        key_label.add_css_class ("widlet-details-key");
+
+        value_label = new Gtk.Label ("--") {
+            xalign = 1,
+            halign = END
+        };
+        value_label.add_css_class ("widlet-details-value");
+
+        grid.attach (key_label, 0, row, 1, 1);
+        grid.attach (value_label, 1, row, 1, 1);
+    }
+
+    private void refresh_details_labels () {
+        details_usage_value_label.label = "%d%%".printf (current_usage_percent);
+
+        double load_1m = 0;
+        double load_5m = 0;
+        double load_15m = 0;
+        if (read_load_average (out load_1m, out load_5m, out load_15m)) {
+            details_load_value_label.label = "%.2f / %.2f / %.2f".printf (load_1m, load_5m, load_15m);
+        } else {
+            details_load_value_label.label = "--";
+        }
+
+        var logical_cores = read_logical_core_count ();
+        details_cores_value_label.label = logical_cores > 0 ? "%d".printf (logical_cores) : "--";
     }
 
     private void set_fill_class (string css_class) {
@@ -210,5 +319,54 @@ public class Dock.CpuWidletItem : ContainerItem {
         }
 
         return false;
+    }
+
+    private static bool read_load_average (out double load_1m, out double load_5m, out double load_15m) {
+        load_1m = 0;
+        load_5m = 0;
+        load_15m = 0;
+
+        string contents = "";
+        try {
+            if (!FileUtils.get_contents ("/proc/loadavg", out contents)) {
+                return false;
+            }
+        } catch (Error e) {
+            return false;
+        }
+
+        var fields = contents.strip ().split (" ");
+        if (fields.length < 3) {
+            return false;
+        }
+
+        if (!double.try_parse (fields[0], out load_1m) ||
+            !double.try_parse (fields[1], out load_5m) ||
+            !double.try_parse (fields[2], out load_15m)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static int read_logical_core_count () {
+        string contents = "";
+        try {
+            if (!FileUtils.get_contents ("/proc/stat", out contents)) {
+                return 0;
+            }
+        } catch (Error e) {
+            return 0;
+        }
+
+        var logical_cores = 0;
+        foreach (var raw_line in contents.split ("\n")) {
+            var line = raw_line.strip ();
+            if (Regex.match_simple ("^cpu[0-9]+\\b", line)) {
+                logical_cores++;
+            }
+        }
+
+        return logical_cores;
     }
 }

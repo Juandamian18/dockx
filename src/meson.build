@@ -32,6 +32,7 @@ sources = [
     'SystemWidlets' / 'GpuWidletItem.vala',
     'SystemWidlets' / 'HarddiskWidletItem.vala',
     'SystemWidlets' / 'RamWidletItem.vala',
+    'SystemWidlets' / 'TrashWidletItem.vala',
     'WeatherSystem' / 'WeatherWidletItem.vala',
     'WorkspaceSystem' / 'DynamicWorkspaceItem.vala',
     'WorkspaceSystem' / 'IconGroup.vala',

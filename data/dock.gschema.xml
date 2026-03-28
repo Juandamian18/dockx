@@ -69,8 +69,14 @@
       <description>When enabled, the hard disk widlet is shown in the dock widlet section.</description>
     </key>
 
+    <key type="b" name="widlet-trash-enabled">
+      <default>true</default>
+      <summary>Show trash widlet</summary>
+      <description>When enabled, the trash widlet is shown in the dock widlet section.</description>
+    </key>
+
     <key type="as" name="widlet-order">
-      <default>['weather', 'cpu', 'cputemp', 'ram', 'gpu', 'harddisk', 'workspace']</default>
+      <default>['weather', 'cpu', 'cputemp', 'ram', 'gpu', 'harddisk', 'trash', 'workspace']</default>
       <summary>Dock widlet order</summary>
       <description>Ordered list that controls how widlets are laid out in the dock area.</description>
     </key>

@@ -6,10 +6,22 @@
 public class Dock.GpuWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 2;
 
+    private class DetailsPopover : Gtk.Popover {
+        class construct {
+            set_css_name ("tooltip");
+        }
+    }
+
     private Gtk.Label value_label;
     private Gtk.Box fill_overlay;
+    private Gtk.Label details_usage_value_label;
+    private Gtk.Label details_source_value_label;
+    private Gtk.Label details_refresh_value_label;
     private uint refresh_timeout_id = 0;
     private string current_fill_class = "";
+    private int current_usage_percent = 0;
+    private bool has_usage_data = false;
+    private string current_source_label = "Unavailable";
 
     public GpuWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -81,6 +93,37 @@ public class Dock.GpuWidletItem : ContainerItem {
 
         child = content;
 
+        var details_title = new Gtk.Label (_("GPU Details")) {
+            xalign = 0
+        };
+        details_title.add_css_class ("widlet-details-title");
+
+        var details_grid = create_details_grid ();
+
+        var details_content = new Gtk.Box (VERTICAL, 8) {
+            margin_start = 10,
+            margin_end = 10,
+            margin_top = 8,
+            margin_bottom = 8,
+            width_request = 250
+        };
+        details_content.add_css_class ("widlet-details-popover");
+        details_content.append (details_title);
+        details_content.append (new Gtk.Separator (HORIZONTAL));
+        details_content.append (details_grid);
+
+        popover_menu = new DetailsPopover () {
+            autohide = true,
+            position = TOP,
+            has_arrow = false,
+            child = details_content
+        };
+        popover_menu.set_offset (0, -1);
+        popover_menu.set_parent (this);
+
+        gesture_click.button = 0;
+        gesture_click.released.connect (on_click_released);
+
         refresh_usage ();
         refresh_timeout_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
             refresh_usage ();
@@ -93,15 +136,23 @@ public class Dock.GpuWidletItem : ContainerItem {
             Source.remove (refresh_timeout_id);
             refresh_timeout_id = 0;
         }
+
+        popover_menu.unparent ();
+        popover_menu.dispose ();
     }
 
     private void refresh_usage () {
         int usage_percent = 0;
-        var has_data = read_gpu_usage (out usage_percent);
+        string source_label = "Unavailable";
+        var has_data = read_gpu_usage (out usage_percent, out source_label);
+        current_source_label = source_label;
         update_usage (usage_percent, has_data);
     }
 
     private void update_usage (int usage_percent, bool has_data) {
+        current_usage_percent = usage_percent;
+        has_usage_data = has_data;
+
         if (has_data) {
             value_label.label = "%d%%".printf (usage_percent);
             tooltip_text = "GPU %d%%".printf (usage_percent);
@@ -110,7 +161,63 @@ public class Dock.GpuWidletItem : ContainerItem {
             value_label.label = "--";
             tooltip_text = _("GPU usage unavailable");
             set_fill_class ("usage-widlet-fill-unknown");
+            current_source_label = "Unavailable";
         }
+
+        refresh_details_labels ();
+    }
+
+    private void on_click_released (int n_press, double x, double y) {
+        var current_button = gesture_click.get_current_button ();
+        if (current_button != Gdk.BUTTON_PRIMARY && current_button != Gdk.BUTTON_SECONDARY) {
+            return;
+        }
+
+        if (popover_menu.visible) {
+            popover_menu.popdown ();
+            return;
+        }
+
+        refresh_details_labels ();
+        popover_tooltip.popdown ();
+        popover_menu.popup ();
+    }
+
+    private Gtk.Grid create_details_grid () {
+        var grid = new Gtk.Grid () {
+            column_spacing = 14,
+            row_spacing = 6
+        };
+        grid.add_css_class ("widlet-details-grid");
+
+        add_details_row (grid, 0, _("Usage"), out details_usage_value_label);
+        add_details_row (grid, 1, _("Source"), out details_source_value_label);
+        add_details_row (grid, 2, _("Refresh"), out details_refresh_value_label);
+        details_refresh_value_label.label = _("2s");
+
+        return grid;
+    }
+
+    private static void add_details_row (Gtk.Grid grid, int row, string key, out Gtk.Label value_label) {
+        var key_label = new Gtk.Label (key) {
+            xalign = 0,
+            halign = START
+        };
+        key_label.add_css_class ("widlet-details-key");
+
+        value_label = new Gtk.Label ("--") {
+            xalign = 1,
+            halign = END
+        };
+        value_label.add_css_class ("widlet-details-value");
+
+        grid.attach (key_label, 0, row, 1, 1);
+        grid.attach (value_label, 1, row, 1, 1);
+    }
+
+    private void refresh_details_labels () {
+        details_usage_value_label.label = has_usage_data ? "%d%%".printf (current_usage_percent) : "--";
+        details_source_value_label.label = current_source_label;
     }
 
     private void set_fill_class (string css_class) {
@@ -144,14 +251,17 @@ public class Dock.GpuWidletItem : ContainerItem {
         return value;
     }
 
-    private static bool read_gpu_usage (out int usage_percent) {
+    private static bool read_gpu_usage (out int usage_percent, out string source_label) {
         usage_percent = 0;
+        source_label = "Unavailable";
 
         if (read_sysfs_gpu_usage (out usage_percent)) {
+            source_label = "sysfs";
             return true;
         }
 
         if (read_nvidia_smi_usage (out usage_percent)) {
+            source_label = "nvidia-smi";
             return true;
         }
 

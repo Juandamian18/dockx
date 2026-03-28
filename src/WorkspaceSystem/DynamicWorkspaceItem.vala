@@ -11,6 +11,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
     private const string GPU_WIDLET_KEY = "widlet-gpu-enabled";
     private const string HARDDISK_WIDLET_KEY = "widlet-harddisk-enabled";
+    private const string TRASH_WIDLET_KEY = "widlet-trash-enabled";
     private const string WIDLET_ORDER_KEY = "widlet-order";
 
     private const string WEATHER_MINIMAL_MODE_KEY = "widlet-weather-minimal-mode";
@@ -30,6 +31,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WIDLET_ID_CPUTEMP = "cputemp";
     private const string WIDLET_ID_GPU = "gpu";
     private const string WIDLET_ID_HARDDISK = "harddisk";
+    private const string WIDLET_ID_TRASH = "trash";
 
     public int workspace_index { get { return WorkspaceSystem.get_default ().workspaces.length; } }
 
@@ -240,6 +242,15 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         false
                     ));
                     break;
+                case WIDLET_ID_TRASH:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "user-trash-symbolic",
+                        _("Trash Widlet"),
+                        _("Shows empty/full trash status. Click to open, right click to empty."),
+                        false
+                    ));
+                    break;
                 case WIDLET_ID_WORKSPACE:
                     widlet_list_box.append (create_widlet_store_row (
                         widlet_id,
@@ -298,6 +309,12 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             };
         } else if (widlet_id == WIDLET_ID_HARDDISK) {
             icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/harddisk-image.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_TRASH) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/trash-empty-image.png") {
                 pixel_size = 22,
                 halign = CENTER,
                 valign = CENTER
@@ -437,6 +454,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                 break;
             case WIDLET_ID_HARDDISK:
                 key = HARDDISK_WIDLET_KEY;
+                break;
+            case WIDLET_ID_TRASH:
+                key = TRASH_WIDLET_KEY;
                 break;
             case WIDLET_ID_WORKSPACE:
             default:
@@ -779,6 +799,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         bool has_cputemp = false;
         bool has_gpu = false;
         bool has_harddisk = false;
+        bool has_trash = false;
         bool has_workspace = false;
 
         foreach (var raw_id in raw_order) {
@@ -801,6 +822,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             } else if (widlet_id == WIDLET_ID_HARDDISK && !has_harddisk) {
                 normalized += WIDLET_ID_HARDDISK;
                 has_harddisk = true;
+            } else if (widlet_id == WIDLET_ID_TRASH && !has_trash) {
+                normalized += WIDLET_ID_TRASH;
+                has_trash = true;
             } else if (widlet_id == WIDLET_ID_WORKSPACE && !has_workspace) {
                 normalized += WIDLET_ID_WORKSPACE;
                 has_workspace = true;
@@ -824,6 +848,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         }
         if (!has_harddisk) {
             normalized += WIDLET_ID_HARDDISK;
+        }
+        if (!has_trash) {
+            normalized += WIDLET_ID_TRASH;
         }
         if (!has_workspace) {
             normalized += WIDLET_ID_WORKSPACE;

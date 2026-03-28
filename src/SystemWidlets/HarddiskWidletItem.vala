@@ -6,13 +6,26 @@
 public class Dock.HarddiskWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 1;
 
+    private class DetailsPopover : Gtk.Popover {
+        class construct {
+            set_css_name ("tooltip");
+        }
+    }
+
     private Gtk.Label value_label;
     private Gtk.Box fill_overlay;
+    private Gtk.Label details_activity_value_label;
+    private Gtk.Label details_devices_value_label;
+    private Gtk.Label details_busy_time_value_label;
     private uint refresh_timeout_id = 0;
     private string current_fill_class = "";
     private bool has_previous_sample = false;
     private uint64 previous_io_millis = 0;
     private int64 previous_timestamp_ms = 0;
+    private int current_usage_percent = 0;
+    private bool has_activity_data = false;
+    private uint current_tracked_devices = 0;
+    private uint64 current_busy_millis_per_second = 0;
 
     public HarddiskWidletItem () {
         Object (disallow_dnd: true, group: Group.WORKSPACE);
@@ -84,6 +97,37 @@ public class Dock.HarddiskWidletItem : ContainerItem {
 
         child = content;
 
+        var details_title = new Gtk.Label (_("Disk Details")) {
+            xalign = 0
+        };
+        details_title.add_css_class ("widlet-details-title");
+
+        var details_grid = create_details_grid ();
+
+        var details_content = new Gtk.Box (VERTICAL, 8) {
+            margin_start = 10,
+            margin_end = 10,
+            margin_top = 8,
+            margin_bottom = 8,
+            width_request = 250
+        };
+        details_content.add_css_class ("widlet-details-popover");
+        details_content.append (details_title);
+        details_content.append (new Gtk.Separator (HORIZONTAL));
+        details_content.append (details_grid);
+
+        popover_menu = new DetailsPopover () {
+            autohide = true,
+            position = TOP,
+            has_arrow = false,
+            child = details_content
+        };
+        popover_menu.set_offset (0, -1);
+        popover_menu.set_parent (this);
+
+        gesture_click.button = 0;
+        gesture_click.released.connect (on_click_released);
+
         refresh_usage ();
         refresh_timeout_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
             refresh_usage ();
@@ -96,17 +140,26 @@ public class Dock.HarddiskWidletItem : ContainerItem {
             Source.remove (refresh_timeout_id);
             refresh_timeout_id = 0;
         }
+
+        popover_menu.unparent ();
+        popover_menu.dispose ();
     }
 
     private void refresh_usage () {
         int usage_percent = 0;
         uint64 current_io_millis = 0;
+        uint tracked_devices = 0;
         var now_ms = GLib.get_monotonic_time () / 1000;
 
-        if (!read_total_disk_io_millis (out current_io_millis)) {
+        if (!read_total_disk_io_millis (out current_io_millis, out tracked_devices)) {
+            has_activity_data = false;
+            current_tracked_devices = 0;
+            current_busy_millis_per_second = 0;
             update_usage (0, false);
             return;
         }
+
+        current_tracked_devices = tracked_devices;
 
         if (has_previous_sample && now_ms > previous_timestamp_ms && current_io_millis >= previous_io_millis) {
             var delta_io_millis = current_io_millis - previous_io_millis;
@@ -114,9 +167,13 @@ public class Dock.HarddiskWidletItem : ContainerItem {
 
             if (delta_elapsed_millis > 0) {
                 usage_percent = clamp_percentage ((int) Math.round ((double) delta_io_millis * 100.0 / (double) delta_elapsed_millis));
+                current_busy_millis_per_second = (delta_io_millis * 1000) / delta_elapsed_millis;
+            } else {
+                current_busy_millis_per_second = 0;
             }
             update_usage (usage_percent, true);
         } else {
+            current_busy_millis_per_second = 0;
             update_usage (0, true);
         }
 
@@ -126,6 +183,9 @@ public class Dock.HarddiskWidletItem : ContainerItem {
     }
 
     private void update_usage (int usage_percent, bool has_data) {
+        current_usage_percent = usage_percent;
+        has_activity_data = has_data;
+
         if (has_data) {
             value_label.label = "%d%%".printf (usage_percent);
             tooltip_text = _("Disk activity %d%%").printf (usage_percent);
@@ -135,6 +195,67 @@ public class Dock.HarddiskWidletItem : ContainerItem {
             tooltip_text = _("Disk activity unavailable");
             set_fill_class ("usage-widlet-fill-unknown");
         }
+
+        refresh_details_labels ();
+    }
+
+    private void on_click_released (int n_press, double x, double y) {
+        var current_button = gesture_click.get_current_button ();
+        if (current_button != Gdk.BUTTON_PRIMARY && current_button != Gdk.BUTTON_SECONDARY) {
+            return;
+        }
+
+        if (popover_menu.visible) {
+            popover_menu.popdown ();
+            return;
+        }
+
+        refresh_details_labels ();
+        popover_tooltip.popdown ();
+        popover_menu.popup ();
+    }
+
+    private Gtk.Grid create_details_grid () {
+        var grid = new Gtk.Grid () {
+            column_spacing = 14,
+            row_spacing = 6
+        };
+        grid.add_css_class ("widlet-details-grid");
+
+        add_details_row (grid, 0, _("Activity"), out details_activity_value_label);
+        add_details_row (grid, 1, _("Devices"), out details_devices_value_label);
+        add_details_row (grid, 2, _("Busy Time"), out details_busy_time_value_label);
+
+        return grid;
+    }
+
+    private static void add_details_row (Gtk.Grid grid, int row, string key, out Gtk.Label value_label) {
+        var key_label = new Gtk.Label (key) {
+            xalign = 0,
+            halign = START
+        };
+        key_label.add_css_class ("widlet-details-key");
+
+        value_label = new Gtk.Label ("--") {
+            xalign = 1,
+            halign = END
+        };
+        value_label.add_css_class ("widlet-details-value");
+
+        grid.attach (key_label, 0, row, 1, 1);
+        grid.attach (value_label, 1, row, 1, 1);
+    }
+
+    private void refresh_details_labels () {
+        details_devices_value_label.label = "%u".printf (current_tracked_devices);
+        if (!has_activity_data) {
+            details_activity_value_label.label = "--";
+            details_busy_time_value_label.label = "--";
+            return;
+        }
+
+        details_activity_value_label.label = "%d%%".printf (current_usage_percent);
+        details_busy_time_value_label.label = "%.0f ms/s".printf ((double) current_busy_millis_per_second);
     }
 
     private void set_fill_class (string css_class) {
@@ -168,8 +289,9 @@ public class Dock.HarddiskWidletItem : ContainerItem {
         return value;
     }
 
-    private static bool read_total_disk_io_millis (out uint64 total_io_millis) {
+    private static bool read_total_disk_io_millis (out uint64 total_io_millis, out uint tracked_device_count) {
         total_io_millis = 0;
+        tracked_device_count = 0;
 
         string contents = "";
         try {
@@ -212,6 +334,7 @@ public class Dock.HarddiskWidletItem : ContainerItem {
 
             total_io_millis += uint64.parse (io_time_text);
             found_device = true;
+            tracked_device_count++;
         }
 
         return found_device;

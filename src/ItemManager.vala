@@ -28,6 +28,7 @@
     private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
     private const string GPU_WIDLET_KEY = "widlet-gpu-enabled";
     private const string HARDDISK_WIDLET_KEY = "widlet-harddisk-enabled";
+    private const string TRASH_WIDLET_KEY = "widlet-trash-enabled";
     private const string WIDLET_ORDER_KEY = "widlet-order";
     private const string WIDLET_ID_WEATHER = "weather";
     private const string WIDLET_ID_CPU = "cpu";
@@ -35,6 +36,7 @@
     private const string WIDLET_ID_CPUTEMP = "cputemp";
     private const string WIDLET_ID_GPU = "gpu";
     private const string WIDLET_ID_HARDDISK = "harddisk";
+    private const string WIDLET_ID_TRASH = "trash";
     private const string WIDLET_ID_WORKSPACE = "workspace";
 
     private Gtk.Separator separator;
@@ -45,12 +47,14 @@
     private bool cputemp_widlet_enabled = true;
     private bool gpu_widlet_enabled = true;
     private bool harddisk_widlet_enabled = true;
+    private bool trash_widlet_enabled = true;
     private WeatherWidletItem weather_widlet_item;
     private CpuWidletItem cpu_widlet_item;
     private RamWidletItem ram_widlet_item;
     private CpuTempWidletItem cputemp_widlet_item;
     private GpuWidletItem gpu_widlet_item;
     private HarddiskWidletItem harddisk_widlet_item;
+    private TrashWidletItem trash_widlet_item;
 #endif
 
     static construct {
@@ -80,6 +84,7 @@
         cputemp_widlet_item = new CpuTempWidletItem ();
         gpu_widlet_item = new GpuWidletItem ();
         harddisk_widlet_item = new HarddiskWidletItem ();
+        trash_widlet_item = new TrashWidletItem ();
         weather_widlet_item.mode_changed.connect (() => {
             reposition_items ();
             queue_resize ();
@@ -131,6 +136,10 @@
         if (settings.settings_schema.has_key (HARDDISK_WIDLET_KEY)) {
             harddisk_widlet_enabled = settings.get_boolean (HARDDISK_WIDLET_KEY);
             settings.changed[HARDDISK_WIDLET_KEY].connect (update_harddisk_widlet_state);
+        }
+        if (settings.settings_schema.has_key (TRASH_WIDLET_KEY)) {
+            trash_widlet_enabled = settings.get_boolean (TRASH_WIDLET_KEY);
+            settings.changed[TRASH_WIDLET_KEY].connect (update_trash_widlet_state);
         }
         if (settings.settings_schema.has_key (WIDLET_ORDER_KEY)) {
             settings.changed[WIDLET_ORDER_KEY].connect (() => {
@@ -266,6 +275,7 @@
             update_cputemp_widlet_state ();
             update_gpu_widlet_state ();
             update_harddisk_widlet_state ();
+            update_trash_widlet_state ();
 #endif
         });
     }
@@ -559,6 +569,10 @@
                 if (should_show_harddisk_widlet ()) {
                     position_item (harddisk_widlet_item, ref x);
                 }
+            } else if (widlet_id == WIDLET_ID_TRASH) {
+                if (should_show_trash_widlet ()) {
+                    position_item (trash_widlet_item, ref x);
+                }
             } else if (widlet_id == WIDLET_ID_WORKSPACE) {
                 if (should_show_workspace_widlet ()) {
                     foreach (var icon_group in icon_groups) {
@@ -597,6 +611,10 @@
                 if (should_show_harddisk_widlet ()) {
                     total += get_item_width (harddisk_widlet_item);
                 }
+            } else if (widlet_id == WIDLET_ID_TRASH) {
+                if (should_show_trash_widlet ()) {
+                    total += get_item_width (trash_widlet_item);
+                }
             } else if (widlet_id == WIDLET_ID_WORKSPACE) {
                 if (should_show_workspace_widlet ()) {
                     foreach (var icon_group in icon_groups) {
@@ -629,6 +647,8 @@
                 offset += get_item_width (gpu_widlet_item);
             } else if (widlet_id == WIDLET_ID_HARDDISK && should_show_harddisk_widlet ()) {
                 offset += get_item_width (harddisk_widlet_item);
+            } else if (widlet_id == WIDLET_ID_TRASH && should_show_trash_widlet ()) {
+                offset += get_item_width (trash_widlet_item);
             }
         }
 
@@ -643,6 +663,7 @@
         bool has_cputemp = false;
         bool has_gpu = false;
         bool has_harddisk = false;
+        bool has_trash = false;
         bool has_workspace = false;
 
         if (settings.settings_schema.has_key (WIDLET_ORDER_KEY)) {
@@ -666,6 +687,9 @@
                 } else if (widlet_id == WIDLET_ID_HARDDISK && !has_harddisk) {
                     order += WIDLET_ID_HARDDISK;
                     has_harddisk = true;
+                } else if (widlet_id == WIDLET_ID_TRASH && !has_trash) {
+                    order += WIDLET_ID_TRASH;
+                    has_trash = true;
                 } else if (widlet_id == WIDLET_ID_WORKSPACE && !has_workspace) {
                     order += WIDLET_ID_WORKSPACE;
                     has_workspace = true;
@@ -690,6 +714,9 @@
         }
         if (!has_harddisk) {
             order += WIDLET_ID_HARDDISK;
+        }
+        if (!has_trash) {
+            order += WIDLET_ID_TRASH;
         }
         if (!has_workspace) {
             order += WIDLET_ID_WORKSPACE;
@@ -720,6 +747,10 @@
 
     private bool should_show_harddisk_widlet () {
         return harddisk_widlet_enabled;
+    }
+
+    private bool should_show_trash_widlet () {
+        return trash_widlet_enabled;
     }
 
     private void update_weather_widlet_state () {
@@ -826,6 +857,25 @@
 
         harddisk_widlet_item.visible = harddisk_widlet_enabled;
         harddisk_widlet_item.sensitive = harddisk_widlet_enabled;
+
+        reposition_items ();
+
+        resize_animation.easing = EASE_IN_OUT_QUAD;
+        resize_animation.duration = Granite.TRANSITION_DURATION_OPEN;
+        resize_animation.value_from = get_width ();
+        resize_animation.value_to = get_total_width ();
+        resize_animation.play ();
+    }
+
+    private void update_trash_widlet_state () {
+        if (settings.settings_schema.has_key (TRASH_WIDLET_KEY)) {
+            trash_widlet_enabled = settings.get_boolean (TRASH_WIDLET_KEY);
+        } else {
+            trash_widlet_enabled = true;
+        }
+
+        trash_widlet_item.visible = trash_widlet_enabled;
+        trash_widlet_item.sensitive = trash_widlet_enabled;
 
         reposition_items ();
 

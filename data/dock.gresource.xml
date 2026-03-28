@@ -45,5 +45,7 @@
     <file compressed="true">widlet-icons/gpu-image.png</file>
     <file compressed="true">widlet-icons/harddisk-image.png</file>
     <file compressed="true">widlet-icons/ram-image.png</file>
+    <file compressed="true">widlet-icons/trash-empty-image.png</file>
+    <file compressed="true">widlet-icons/trash-full-image.png</file>
   </gresource>
 </gresources>
