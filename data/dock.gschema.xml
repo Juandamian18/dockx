@@ -39,6 +39,12 @@
       <description>When enabled, the weather widlet is shown in the dock widlet section.</description>
     </key>
 
+    <key type="as" name="widlet-order">
+      <default>['weather', 'workspace']</default>
+      <summary>Dock widlet order</summary>
+      <description>Ordered list that controls how widlets are laid out in the dock area.</description>
+    </key>
+
     <key type="b" name="widlet-weather-minimal-mode">
       <default>false</default>
       <summary>Show weather widlet in minimal mode</summary>

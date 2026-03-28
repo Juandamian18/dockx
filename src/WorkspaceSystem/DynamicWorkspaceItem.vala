@@ -6,6 +6,8 @@
 public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
+    private const string WIDLET_ORDER_KEY = "widlet-order";
+
     private const string WEATHER_MINIMAL_MODE_KEY = "widlet-weather-minimal-mode";
     private const string WEATHER_LOCATION_KEY = "widlet-weather-location";
     private const string WEATHER_LATITUDE_KEY = "widlet-weather-latitude";
@@ -16,10 +18,17 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WEATHER_SIM_TEMPERATURE_KEY = "widlet-weather-sim-temperature";
     private const string WEATHER_SIM_HOUR_KEY = "widlet-weather-sim-hour";
 
+    private const string WIDLET_ID_WORKSPACE = "workspace";
+    private const string WIDLET_ID_WEATHER = "weather";
+
     public int workspace_index { get { return WorkspaceSystem.get_default ().workspaces.length; } }
 
     private Gtk.Image image;
     private Gtk.Window? widlet_window = null;
+    private Gtk.Window? weather_settings_window = null;
+    private Gtk.Window? workspace_settings_window = null;
+    private Gtk.Box? widlet_list_box = null;
+    private string[] widlet_order = {};
     private static Soup.Session? geocoding_session = null;
 
     public DynamicWorkspaceIcon () {
@@ -65,6 +74,14 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         if (widlet_window != null) {
             widlet_window.destroy ();
         }
+
+        if (weather_settings_window != null) {
+            weather_settings_window.destroy ();
+        }
+
+        if (workspace_settings_window != null) {
+            workspace_settings_window.destroy ();
+        }
     }
 
     private void update_active_state () {
@@ -85,32 +102,305 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
     private void open_widlet_window () {
         if (widlet_window != null) {
+            refresh_widlet_rows ();
             widlet_window.present ();
             return;
         }
 
-        var workspace_widlet_switch = new Gtk.Switch () {
-            halign = END,
-            valign = CENTER
+        widlet_order = load_widlet_order ();
+
+        var title = new Gtk.Label (_("New Widlet")) {
+            xalign = 0
+        };
+        title.add_css_class ("title-3");
+
+        var subtitle = new Gtk.Label (_("Browse your dock widlets, toggle visibility, reorder them, and open each widlet settings panel.")) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 44
+        };
+        subtitle.add_css_class (Granite.CssClass.DIM);
+        subtitle.add_css_class ("widlet-store-subtitle");
+
+        widlet_list_box = new Gtk.Box (VERTICAL, 8) {
+            vexpand = true
+        };
+        widlet_list_box.add_css_class ("widlet-store-list");
+        refresh_widlet_rows ();
+
+        var content = new Gtk.Box (VERTICAL, 12) {
+            margin_start = 16,
+            margin_end = 16,
+            margin_top = 16,
+            margin_bottom = 16,
+            width_request = 470
+        };
+        content.add_css_class ("widlet-store-window");
+        content.append (title);
+        content.append (subtitle);
+        content.append (widlet_list_box);
+
+        widlet_window = new Gtk.Window () {
+            title = _("New Widlet"),
+            child = content,
+            resizable = false,
+            modal = false,
+            hide_on_close = true
         };
 
-        if (dock_settings.settings_schema.has_key (WORKSPACE_WIDLET_KEY)) {
-            dock_settings.bind (WORKSPACE_WIDLET_KEY, workspace_widlet_switch, "active", DEFAULT);
-        } else {
-            workspace_widlet_switch.active = true;
-            workspace_widlet_switch.sensitive = false;
+        attach_window_to_application (widlet_window);
+        widlet_window.present ();
+    }
+
+    private void attach_window_to_application (Gtk.Window window) {
+        var app = GLib.Application.get_default ();
+        if (app is Gtk.Application) {
+            var gtk_app = (Gtk.Application) app;
+            gtk_app.add_window (window);
+
+            if (widlet_window != null && window != widlet_window) {
+                window.transient_for = widlet_window;
+            } else if (gtk_app.active_window != null && gtk_app.active_window != window) {
+                window.transient_for = gtk_app.active_window;
+            }
+        }
+    }
+
+    private void refresh_widlet_rows () {
+        if (widlet_list_box == null) {
+            return;
         }
 
-        var weather_widlet_switch = new Gtk.Switch () {
+        widlet_order = normalize_widlet_order (widlet_order);
+        clear_box (widlet_list_box);
+
+        foreach (var widlet_id in widlet_order) {
+            switch (widlet_id) {
+                case WIDLET_ID_WEATHER:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "weather-overcast-symbolic",
+                        _("Weather Widlet"),
+                        _("Current weather card with city, temperature, icon and forecast panel."),
+                        true
+                    ));
+                    break;
+                case WIDLET_ID_WORKSPACE:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "view-grid-symbolic",
+                        _("Workspace Widlet"),
+                        _("Workspace groups and app clusters on the right side of the dock."),
+                        false
+                    ));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private Gtk.Widget create_widlet_store_row (
+        string widlet_id,
+        string icon_name,
+        string title,
+        string description,
+        bool has_settings
+    ) {
+        const int action_button_size = 28;
+        var row_index = get_widlet_index (widlet_id);
+
+        Gtk.Image icon;
+        if (widlet_id == WIDLET_ID_WEATHER) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/weather-icons/overcast.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else {
+            icon = new Gtk.Image.from_icon_name (icon_name) {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        }
+        icon.add_css_class ("widlet-store-icon");
+
+        var icon_wrap = new Gtk.Box (HORIZONTAL, 0) {
+            halign = CENTER,
+            valign = CENTER
+        };
+        icon_wrap.add_css_class ("widlet-store-icon-wrap");
+        icon_wrap.append (icon);
+
+        var row_title = new Gtk.Label (title) {
+            xalign = 0,
+            hexpand = true
+        };
+        row_title.add_css_class ("widlet-store-title");
+
+        var row_description = new Gtk.Label (description) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 36
+        };
+        row_description.add_css_class (Granite.CssClass.DIM);
+        row_description.add_css_class (Granite.CssClass.SMALL);
+        row_description.add_css_class ("widlet-store-description");
+
+        var row_text = new Gtk.Box (VERTICAL, 3) {
+            hexpand = true,
+            valign = CENTER
+        };
+        row_text.append (row_title);
+        row_text.append (row_description);
+
+        var row_switch = new Gtk.Switch () {
             halign = END,
             valign = CENTER
         };
+        bind_widlet_switch (widlet_id, row_switch);
 
-        if (dock_settings.settings_schema.has_key (WEATHER_WIDLET_KEY)) {
-            dock_settings.bind (WEATHER_WIDLET_KEY, weather_widlet_switch, "active", DEFAULT);
+        var move_up_button = new Gtk.Button.from_icon_name ("go-up-symbolic") {
+            tooltip_text = _("Move up"),
+            valign = CENTER,
+            width_request = action_button_size,
+            height_request = action_button_size,
+            sensitive = row_index > 0
+        };
+        move_up_button.add_css_class ("flat");
+        move_up_button.clicked.connect (() => move_widlet (widlet_id, -1));
+
+        var move_down_button = new Gtk.Button.from_icon_name ("go-down-symbolic") {
+            tooltip_text = _("Move down"),
+            valign = CENTER,
+            width_request = action_button_size,
+            height_request = action_button_size,
+            sensitive = row_index >= 0 && row_index < widlet_order.length - 1
+        };
+        move_down_button.add_css_class ("flat");
+        move_down_button.clicked.connect (() => move_widlet (widlet_id, +1));
+
+        var reorder_controls = new Gtk.Box (VERTICAL, 2) {
+            valign = CENTER,
+            width_request = action_button_size
+        };
+        reorder_controls.append (move_up_button);
+        reorder_controls.append (move_down_button);
+
+        var settings_button = new Gtk.Button.from_icon_name ("emblem-system-symbolic") {
+            valign = CENTER,
+            width_request = action_button_size,
+            height_request = action_button_size
+        };
+        settings_button.add_css_class ("flat");
+        settings_button.add_css_class ("widlet-store-settings-button");
+        if (has_settings) {
+            settings_button.tooltip_text = _("Configure widlet");
+            settings_button.clicked.connect (() => open_widlet_settings_window (widlet_id));
         } else {
-            weather_widlet_switch.active = true;
-            weather_widlet_switch.sensitive = false;
+            // Keep column width for alignment but hide the control when settings are unavailable.
+            settings_button.sensitive = false;
+            settings_button.opacity = 0;
+            settings_button.can_target = false;
+            settings_button.focusable = false;
+        }
+
+        var actions = new Gtk.Box (HORIZONTAL, 4) {
+            halign = END,
+            valign = CENTER
+        };
+        actions.add_css_class ("widlet-store-actions");
+        actions.append (reorder_controls);
+        actions.append (settings_button);
+        actions.append (row_switch);
+
+        var row_content = new Gtk.Box (HORIZONTAL, 12) {
+            margin_start = 12,
+            margin_end = 12,
+            margin_top = 10,
+            margin_bottom = 10,
+            valign = CENTER
+        };
+        row_content.append (icon_wrap);
+        row_content.append (row_text);
+        row_content.append (actions);
+
+        var row = new Gtk.Box (VERTICAL, 0);
+        row.add_css_class ("widlet-store-row");
+        row.append (row_content);
+        return row;
+    }
+
+    private void bind_widlet_switch (string widlet_id, Gtk.Switch row_switch) {
+        string key = widlet_id == WIDLET_ID_WEATHER ? WEATHER_WIDLET_KEY : WORKSPACE_WIDLET_KEY;
+
+        if (dock_settings.settings_schema.has_key (key)) {
+            dock_settings.bind (key, row_switch, "active", DEFAULT);
+        } else {
+            row_switch.active = true;
+            row_switch.sensitive = false;
+        }
+    }
+
+    private void open_widlet_settings_window (string widlet_id) {
+        switch (widlet_id) {
+            case WIDLET_ID_WEATHER:
+                open_weather_settings_window ();
+                break;
+            case WIDLET_ID_WORKSPACE:
+                open_workspace_settings_window ();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void open_workspace_settings_window () {
+        if (workspace_settings_window != null) {
+            workspace_settings_window.present ();
+            return;
+        }
+
+        var title = new Gtk.Label (_("Workspace Widlet")) {
+            xalign = 0
+        };
+        title.add_css_class ("title-3");
+
+        var description = new Gtk.Label (_("No extra settings are available for this widlet yet.")) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 34
+        };
+        description.add_css_class (Granite.CssClass.DIM);
+
+        var content = new Gtk.Box (VERTICAL, 8) {
+            margin_start = 16,
+            margin_end = 16,
+            margin_top = 16,
+            margin_bottom = 16,
+            width_request = 340
+        };
+        content.add_css_class ("widlet-settings-window");
+        content.append (title);
+        content.append (description);
+
+        workspace_settings_window = new Gtk.Window () {
+            title = _("Workspace Widlet Settings"),
+            child = content,
+            resizable = false,
+            modal = false,
+            hide_on_close = true
+        };
+
+        attach_window_to_application (workspace_settings_window);
+        workspace_settings_window.present ();
+    }
+
+    private void open_weather_settings_window () {
+        if (weather_settings_window != null) {
+            weather_settings_window.present ();
+            return;
         }
 
         var weather_minimal_mode_switch = new Gtk.Switch () {
@@ -224,52 +514,28 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             simulator_hour_spin.sensitive = false;
         }
 
-        var title = new Gtk.Label (_("New Widlet")) {
+        var title = new Gtk.Label (_("Weather Widlet Settings")) {
             xalign = 0
         };
         title.add_css_class ("title-3");
 
-        var subtitle = new Gtk.Label (_("Enable or disable dock widlets.")) {
+        var subtitle = new Gtk.Label (_("Customize weather units, location, minimal mode and preview controls.")) {
             xalign = 0,
             wrap = true,
-            max_width_chars = 30
+            max_width_chars = 42
         };
         subtitle.add_css_class (Granite.CssClass.DIM);
-        subtitle.add_css_class (Granite.CssClass.SMALL);
+        subtitle.add_css_class ("widlet-settings-subtitle");
 
-        var content = new Gtk.Box (VERTICAL, 10) {
-            margin_start = 16,
-            margin_end = 16,
-            margin_top = 16,
-            margin_bottom = 16,
-            width_request = 360
+        var weather_section_title = new Gtk.Label (_("Appearance")) {
+            xalign = 0
         };
-        content.append (title);
-        content.append (subtitle);
-        content.append (new Gtk.Separator (HORIZONTAL));
-        content.append (create_widlet_row (
-            _("Workspace Widlet"),
-            _("Shows the workspace section and app groups."),
-            workspace_widlet_switch
-        ));
-        content.append (new Gtk.Separator (HORIZONTAL));
-        content.append (create_widlet_row (
-            _("Weather Widlet"),
-            _("Shows current weather using Open-Meteo data."),
-            weather_widlet_switch
-        ));
-        content.append (new Gtk.Separator (HORIZONTAL));
-        content.append (create_setting_row (
-            _("Weather Minimal Mode"),
-            _("Shows only temperature in dock width and reveals details on hover."),
-            weather_minimal_mode_switch
-        ));
-        content.append (new Gtk.Separator (HORIZONTAL));
+        weather_section_title.add_css_class ("widlet-settings-section-title");
 
         var weather_location_title = new Gtk.Label (_("Weather Location")) {
             xalign = 0
         };
-        weather_location_title.add_css_class ("heading");
+        weather_location_title.add_css_class ("widlet-settings-section-title");
 
         var city_entry = new Gtk.Entry () {
             hexpand = true,
@@ -291,7 +557,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         var city_status = new Gtk.Label (_("Set your city and the widlet will update coordinates.")) {
             xalign = 0,
             wrap = true,
-            max_width_chars = 34
+            max_width_chars = 40
         };
         city_status.add_css_class (Granite.CssClass.DIM);
         city_status.add_css_class (Granite.CssClass.SMALL);
@@ -300,31 +566,21 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         location_box.append (weather_location_title);
         location_box.append (city_row);
         location_box.append (city_status);
-        content.append (location_box);
-
-        content.append (new Gtk.Separator (HORIZONTAL));
-        content.append (create_setting_row (
-            _("Temperature Unit"),
-            _("Choose whether the weather widlet displays Celsius or Fahrenheit."),
-            weather_unit_combo
-        ));
-
-        content.append (new Gtk.Separator (HORIZONTAL));
 
         var simulator_title = new Gtk.Label (_("Weather Preview Tool")) {
             xalign = 0
         };
-        simulator_title.add_css_class ("heading");
+        simulator_title.add_css_class ("widlet-settings-section-title");
 
         var simulator_subtitle = new Gtk.Label (_("Temporary tool to preview all Open-Meteo weather types.")) {
             xalign = 0,
             wrap = true,
-            max_width_chars = 34
+            max_width_chars = 40
         };
         simulator_subtitle.add_css_class (Granite.CssClass.DIM);
         simulator_subtitle.add_css_class (Granite.CssClass.SMALL);
 
-        var simulator_box = new Gtk.Box (VERTICAL, 6);
+        var simulator_box = new Gtk.Box (VERTICAL, 8);
         simulator_box.append (simulator_title);
         simulator_box.append (simulator_subtitle);
         simulator_box.append (create_setting_row (
@@ -350,7 +606,6 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             _("Hour 0-23 used for day/night gradient behavior."),
             simulator_hour_spin
         ));
-        content.append (simulator_box);
 
         city_apply_button.clicked.connect (() => {
             geocode_and_store_city.begin (city_entry.text, city_status, city_entry);
@@ -359,24 +614,115 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             geocode_and_store_city.begin (city_entry.text, city_status, city_entry);
         });
 
-        widlet_window = new Gtk.Window () {
-            title = _("New Widlet"),
+        var content = new Gtk.Box (VERTICAL, 10) {
+            margin_start = 16,
+            margin_end = 16,
+            margin_top = 16,
+            margin_bottom = 16,
+            width_request = 430
+        };
+        content.add_css_class ("widlet-settings-window");
+        content.append (title);
+        content.append (subtitle);
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (weather_section_title);
+        content.append (create_setting_row (
+            _("Weather Minimal Mode"),
+            _("Shows only temperature in dock width and reveals details on hover."),
+            weather_minimal_mode_switch
+        ));
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (create_setting_row (
+            _("Temperature Unit"),
+            _("Choose whether the weather widlet displays Celsius or Fahrenheit."),
+            weather_unit_combo
+        ));
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (location_box);
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (simulator_box);
+
+        weather_settings_window = new Gtk.Window () {
+            title = _("Weather Widlet Settings"),
             child = content,
             resizable = false,
             modal = false,
             hide_on_close = true
         };
 
-        var app = GLib.Application.get_default ();
-        if (app is Gtk.Application) {
-            ((Gtk.Application) app).add_window (widlet_window);
-        }
-
-        widlet_window.present ();
+        attach_window_to_application (weather_settings_window);
+        weather_settings_window.present ();
     }
 
-    private Gtk.Widget create_widlet_row (string title, string description, Gtk.Switch row_switch) {
-        return create_setting_row (title, description, row_switch);
+    private string[] load_widlet_order () {
+        if (dock_settings.settings_schema.has_key (WIDLET_ORDER_KEY)) {
+            return normalize_widlet_order (dock_settings.get_strv (WIDLET_ORDER_KEY));
+        }
+
+        return normalize_widlet_order ({});
+    }
+
+    private string[] normalize_widlet_order (string[] raw_order) {
+        string[] normalized = {};
+        bool has_weather = false;
+        bool has_workspace = false;
+
+        foreach (var raw_id in raw_order) {
+            var widlet_id = raw_id.strip ().down ();
+            if (widlet_id == WIDLET_ID_WEATHER && !has_weather) {
+                normalized += WIDLET_ID_WEATHER;
+                has_weather = true;
+            } else if (widlet_id == WIDLET_ID_WORKSPACE && !has_workspace) {
+                normalized += WIDLET_ID_WORKSPACE;
+                has_workspace = true;
+            }
+        }
+
+        if (!has_weather) {
+            normalized += WIDLET_ID_WEATHER;
+        }
+        if (!has_workspace) {
+            normalized += WIDLET_ID_WORKSPACE;
+        }
+
+        return normalized;
+    }
+
+    private void persist_widlet_order () {
+        widlet_order = normalize_widlet_order (widlet_order);
+
+        if (dock_settings.settings_schema.has_key (WIDLET_ORDER_KEY)) {
+            dock_settings.set_strv (WIDLET_ORDER_KEY, widlet_order);
+        }
+    }
+
+    private int get_widlet_index (string widlet_id) {
+        for (int i = 0; i < widlet_order.length; i++) {
+            if (widlet_order[i] == widlet_id) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void move_widlet (string widlet_id, int direction) {
+        var current_index = get_widlet_index (widlet_id);
+        if (current_index < 0) {
+            return;
+        }
+
+        var new_index = current_index + direction;
+        if (new_index < 0 || new_index >= widlet_order.length) {
+            return;
+        }
+
+        var swapped = widlet_order[new_index];
+        widlet_order[new_index] = widlet_order[current_index];
+        widlet_order[current_index] = swapped;
+
+        persist_widlet_order ();
+        refresh_widlet_rows ();
     }
 
     private Gtk.Widget create_setting_row (string title, string description, Gtk.Widget control) {
@@ -388,7 +734,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         var row_description = new Gtk.Label (description) {
             xalign = 0,
             wrap = true,
-            max_width_chars = 24
+            max_width_chars = 30
         };
         row_description.add_css_class (Granite.CssClass.DIM);
         row_description.add_css_class (Granite.CssClass.SMALL);
@@ -401,9 +747,19 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         row_text.append (row_description);
 
         var row = new Gtk.Box (HORIZONTAL, 12);
+        row.add_css_class ("widlet-settings-row");
         row.append (row_text);
         row.append (control);
         return row;
+    }
+
+    private static void clear_box (Gtk.Box box) {
+        var child = box.get_first_child ();
+        while (child != null) {
+            var next = child.get_next_sibling ();
+            box.remove (child);
+            child = next;
+        }
     }
 
     private static int[] get_open_meteo_weather_codes () {

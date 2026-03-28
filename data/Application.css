@@ -533,3 +533,84 @@ icongroup.weather-widlet-item.minimal:active .icon-group-bin {
 .weather-forecast-temps {
     font-weight: 600;
 }
+
+.widlet-store-window {
+    min-width: 0;
+}
+
+.widlet-store-subtitle {
+    line-height: 1.35;
+}
+
+.widlet-store-list {
+    margin-top: 2px;
+}
+
+.widlet-store-row {
+    background: alpha(@base_color, 0.4);
+    border-radius: 12px;
+    box-shadow:
+        inset 0 0 0 1px alpha(@highlight_color, 0.07),
+        0 1px 3px alpha(black, 0.14);
+    transition:
+        background 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.widlet-store-row:hover {
+    background: alpha(@base_color, 0.52);
+    box-shadow:
+        inset 0 0 0 1px alpha(@highlight_color, 0.1),
+        0 2px 6px alpha(black, 0.17);
+}
+
+.widlet-store-icon-wrap {
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 0;
+    background: transparent;
+    margin-top: auto;
+    margin-bottom: auto;
+    box-shadow: none;
+}
+
+.widlet-store-title {
+    font-weight: 700;
+}
+
+.widlet-store-description {
+    line-height: 1.3;
+}
+
+.widlet-store-actions {
+    margin-start: 6px;
+}
+
+.widlet-store-actions button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px;
+    border-radius: 8px;
+}
+
+.widlet-store-settings-button {
+    min-width: 28px;
+    min-height: 28px;
+}
+
+.widlet-settings-window {
+    min-width: 0;
+}
+
+.widlet-settings-subtitle {
+    line-height: 1.35;
+}
+
+.widlet-settings-section-title {
+    font-weight: 650;
+}
+
+.widlet-settings-row {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}

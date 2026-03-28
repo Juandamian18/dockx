@@ -23,6 +23,9 @@
 #if WORKSPACE_SWITCHER
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
+    private const string WIDLET_ORDER_KEY = "widlet-order";
+    private const string WIDLET_ID_WEATHER = "weather";
+    private const string WIDLET_ID_WORKSPACE = "workspace";
 
     private Gtk.Separator separator;
     private bool workspace_widlet_enabled = true;
@@ -83,6 +86,12 @@
         if (settings.settings_schema.has_key (WEATHER_WIDLET_KEY)) {
             weather_widlet_enabled = settings.get_boolean (WEATHER_WIDLET_KEY);
             settings.changed[WEATHER_WIDLET_KEY].connect (update_weather_widlet_state);
+        }
+        if (settings.settings_schema.has_key (WIDLET_ORDER_KEY)) {
+            settings.changed[WIDLET_ORDER_KEY].connect (() => {
+                reposition_items ();
+                queue_resize ();
+            });
         }
 #endif
 
@@ -234,16 +243,14 @@
 #endif
 
 #if WORKSPACE_SWITCHER
-        if (should_show_weather_widlet ()) {
-            position_item (weather_widlet_item, ref x);
-        }
-#endif
-
+        position_widlets (ref x);
+#else
         if (should_show_workspace_widlet ()) {
             foreach (var icon_group in icon_groups) {
                 position_item (icon_group, ref x);
             }
         }
+#endif
 
 #if WORKSPACE_SWITCHER
         position_item (dynamic_workspace_item, ref x);
@@ -344,6 +351,9 @@
             if (now_playing_item.has_player) {
                 offset += get_item_width (now_playing_item);
             }
+#if WORKSPACE_SWITCHER
+            offset += get_offset_before_workspace_widlet ();
+#endif
         } else {
             warning ("Tried to move neither launcher nor icon group");
             return;
@@ -447,15 +457,13 @@
             total += get_item_width (now_playing_item);
         }
 
+#if WORKSPACE_SWITCHER
+        total += get_widlets_total_width ();
+#else
         if (should_show_workspace_widlet ()) {
             foreach (var icon_group in icon_groups) {
                 total += get_item_width (icon_group);
             }
-        }
-
-#if WORKSPACE_SWITCHER
-        if (should_show_weather_widlet ()) {
-            total += get_item_width (weather_widlet_item);
         }
 #endif
 
@@ -475,6 +483,86 @@
     }
 
 #if WORKSPACE_SWITCHER
+    private void position_widlets (ref int x) {
+        foreach (var widlet_id in get_widlet_order ()) {
+            if (widlet_id == WIDLET_ID_WEATHER) {
+                if (should_show_weather_widlet ()) {
+                    position_item (weather_widlet_item, ref x);
+                }
+            } else if (widlet_id == WIDLET_ID_WORKSPACE) {
+                if (should_show_workspace_widlet ()) {
+                    foreach (var icon_group in icon_groups) {
+                        position_item (icon_group, ref x);
+                    }
+                }
+            }
+        }
+    }
+
+    private int get_widlets_total_width () {
+        var total = 0;
+
+        foreach (var widlet_id in get_widlet_order ()) {
+            if (widlet_id == WIDLET_ID_WEATHER) {
+                if (should_show_weather_widlet ()) {
+                    total += get_item_width (weather_widlet_item);
+                }
+            } else if (widlet_id == WIDLET_ID_WORKSPACE) {
+                if (should_show_workspace_widlet ()) {
+                    foreach (var icon_group in icon_groups) {
+                        total += get_item_width (icon_group);
+                    }
+                }
+            }
+        }
+
+        return total;
+    }
+
+    private int get_offset_before_workspace_widlet () {
+        var offset = 0;
+
+        foreach (var widlet_id in get_widlet_order ()) {
+            if (widlet_id == WIDLET_ID_WORKSPACE) {
+                break;
+            }
+
+            if (widlet_id == WIDLET_ID_WEATHER && should_show_weather_widlet ()) {
+                offset += get_item_width (weather_widlet_item);
+            }
+        }
+
+        return offset;
+    }
+
+    private string[] get_widlet_order () {
+        string[] order = {};
+        bool has_weather = false;
+        bool has_workspace = false;
+
+        if (settings.settings_schema.has_key (WIDLET_ORDER_KEY)) {
+            foreach (var raw_id in settings.get_strv (WIDLET_ORDER_KEY)) {
+                var widlet_id = raw_id.strip ().down ();
+                if (widlet_id == WIDLET_ID_WEATHER && !has_weather) {
+                    order += WIDLET_ID_WEATHER;
+                    has_weather = true;
+                } else if (widlet_id == WIDLET_ID_WORKSPACE && !has_workspace) {
+                    order += WIDLET_ID_WORKSPACE;
+                    has_workspace = true;
+                }
+            }
+        }
+
+        if (!has_weather) {
+            order += WIDLET_ID_WEATHER;
+        }
+        if (!has_workspace) {
+            order += WIDLET_ID_WORKSPACE;
+        }
+
+        return order;
+    }
+
     private bool should_show_weather_widlet () {
         return weather_widlet_enabled;
     }
