@@ -140,6 +140,15 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         widlet_list_box.add_css_class ("widlet-store-list");
         refresh_widlet_rows ();
 
+        var widlet_list_scroll = new Gtk.ScrolledWindow () {
+            child = widlet_list_box,
+            hscrollbar_policy = NEVER,
+            vscrollbar_policy = AUTOMATIC,
+            min_content_height = 300,
+            max_content_height = 390
+        };
+        widlet_list_scroll.add_css_class ("widlet-store-scroll");
+
         var content = new Gtk.Box (VERTICAL, 12) {
             margin_start = 16,
             margin_end = 16,
@@ -150,11 +159,13 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         content.add_css_class ("widlet-store-window");
         content.append (title);
         content.append (subtitle);
-        content.append (widlet_list_box);
+        content.append (widlet_list_scroll);
 
         widlet_window = new Gtk.Window () {
             title = _("New Widlet"),
             child = content,
+            default_width = 470,
+            default_height = 520,
             resizable = false,
             modal = false,
             hide_on_close = true

@@ -743,6 +743,10 @@ icongroup.trash-widlet-item:active .icon-group-bin {
     margin-top: 2px;
 }
 
+.widlet-store-scroll {
+    min-width: 0;
+}
+
 .widlet-store-row {
     background: alpha(@base_color, 0.4);
     border-radius: 12px;
