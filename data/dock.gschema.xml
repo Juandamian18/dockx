@@ -27,6 +27,72 @@
       <description>An ordered array of app id's to show as launchers</description>
     </key>
 
+    <key type="b" name="widlet-workspace-enabled">
+      <default>true</default>
+      <summary>Show workspace widlet</summary>
+      <description>When enabled, the workspace widlet section is shown on the right side of the dock.</description>
+    </key>
+
+    <key type="b" name="widlet-weather-enabled">
+      <default>true</default>
+      <summary>Show weather widlet</summary>
+      <description>When enabled, the weather widlet is shown in the dock widlet section.</description>
+    </key>
+
+    <key type="b" name="widlet-weather-minimal-mode">
+      <default>false</default>
+      <summary>Show weather widlet in minimal mode</summary>
+      <description>When enabled, the weather widlet shrinks to dock icon width and shows full details on hover.</description>
+    </key>
+
+    <key type="s" name="widlet-weather-location">
+      <default>'Istanbul'</default>
+      <summary>Weather widlet location label</summary>
+      <description>Displayed city or place name for the weather widlet.</description>
+    </key>
+
+    <key type="d" name="widlet-weather-latitude">
+      <default>41.0082</default>
+      <summary>Weather widlet latitude</summary>
+      <description>Latitude used to request weather data from Open-Meteo.</description>
+    </key>
+
+    <key type="d" name="widlet-weather-longitude">
+      <default>28.9784</default>
+      <summary>Weather widlet longitude</summary>
+      <description>Longitude used to request weather data from Open-Meteo.</description>
+    </key>
+
+    <key type="s" name="widlet-weather-unit">
+      <default>'celsius'</default>
+      <summary>Weather widlet temperature unit</summary>
+      <description>Controls whether weather temperatures are shown in Celsius or Fahrenheit.</description>
+    </key>
+
+    <key type="b" name="widlet-weather-sim-enabled">
+      <default>false</default>
+      <summary>Enable temporary weather simulation mode</summary>
+      <description>When enabled, weather widlet values come from local preview controls instead of Open-Meteo.</description>
+    </key>
+
+    <key type="i" name="widlet-weather-sim-weather-code">
+      <default>3</default>
+      <summary>Simulated weather code</summary>
+      <description>WMO weather code used by the weather widlet simulator.</description>
+    </key>
+
+    <key type="d" name="widlet-weather-sim-temperature">
+      <default>21.0</default>
+      <summary>Simulated temperature</summary>
+      <description>Temperature value used by the weather widlet simulator.</description>
+    </key>
+
+    <key type="i" name="widlet-weather-sim-hour">
+      <default>14</default>
+      <summary>Simulated hour</summary>
+      <description>Hour of day (0-23) used by the weather widlet simulator and dynamic gradient preview.</description>
+    </key>
+
     <key type="b" name="now-playing-minimal-mode">
       <default>false</default>
       <summary>Show now playing in minimal mode</summary>

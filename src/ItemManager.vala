@@ -21,7 +21,13 @@
     private DynamicWorkspaceIcon dynamic_workspace_item;
 
 #if WORKSPACE_SWITCHER
+    private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
+    private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
+
     private Gtk.Separator separator;
+    private bool workspace_widlet_enabled = true;
+    private bool weather_widlet_enabled = true;
+    private WeatherWidletItem weather_widlet_item;
 #endif
 
     static construct {
@@ -45,6 +51,11 @@
 
 #if WORKSPACE_SWITCHER
         dynamic_workspace_item = new DynamicWorkspaceIcon ();
+        weather_widlet_item = new WeatherWidletItem ();
+        weather_widlet_item.mode_changed.connect (() => {
+            reposition_items ();
+            queue_resize ();
+        });
 
         separator = new Gtk.Separator (VERTICAL);
         settings.bind ("icon-size", separator, "height-request", GET);
@@ -63,6 +74,17 @@
         resize_animation.done.connect (() => width_request = -1); //Reset otherwise we stay to big when the launcher icon size changes
 
         settings.changed["icon-size"].connect (reposition_items);
+
+#if WORKSPACE_SWITCHER
+        if (settings.settings_schema.has_key (WORKSPACE_WIDLET_KEY)) {
+            workspace_widlet_enabled = settings.get_boolean (WORKSPACE_WIDLET_KEY);
+            settings.changed[WORKSPACE_WIDLET_KEY].connect (update_workspace_widlet_state);
+        }
+        if (settings.settings_schema.has_key (WEATHER_WIDLET_KEY)) {
+            weather_widlet_enabled = settings.get_boolean (WEATHER_WIDLET_KEY);
+            settings.changed[WEATHER_WIDLET_KEY].connect (update_weather_widlet_state);
+        }
+#endif
 
         var drop_target_file = new Gtk.DropTarget (typeof (File), COPY) {
             preload = true
@@ -170,7 +192,10 @@
 
 #if WORKSPACE_SWITCHER
         WorkspaceSystem.get_default ().workspace_added.connect ((workspace) => {
-            add_item (new WorkspaceIconGroup (workspace));
+            var icon_group = new WorkspaceIconGroup (workspace);
+            icon_group.visible = should_show_workspace_widlet ();
+            icon_group.sensitive = should_show_workspace_widlet ();
+            add_item (icon_group);
         });
 #endif
 
@@ -180,6 +205,8 @@
             now_playing_item.load ();
 #if WORKSPACE_SWITCHER
             WorkspaceSystem.get_default ().load.begin ();
+            update_workspace_widlet_state ();
+            update_weather_widlet_state ();
 #endif
         });
     }
@@ -203,10 +230,19 @@
         move (separator, x - 1, separator_y);
         // Keep separator above neighboring items so it doesn't get visually covered.
         separator.insert_before (this, null);
+        separator.visible = true;
 #endif
 
-        foreach (var icon_group in icon_groups) {
-            position_item (icon_group, ref x);
+#if WORKSPACE_SWITCHER
+        if (should_show_weather_widlet ()) {
+            position_item (weather_widlet_item, ref x);
+        }
+#endif
+
+        if (should_show_workspace_widlet ()) {
+            foreach (var icon_group in icon_groups) {
+                position_item (icon_group, ref x);
+            }
         }
 
 #if WORKSPACE_SWITCHER
@@ -241,7 +277,10 @@
             launchers.add ((Launcher) item);
             sync_pinned ();
         } else if (item is WorkspaceIconGroup) {
-            icon_groups.add ((WorkspaceIconGroup) item);
+            var icon_group = (WorkspaceIconGroup) item;
+            icon_groups.add (icon_group);
+            icon_group.visible = should_show_workspace_widlet ();
+            icon_group.sensitive = should_show_workspace_widlet ();
         }
 
         ulong reveal_cb = 0;
@@ -293,6 +332,10 @@
         if (source is Launcher) {
             list = launchers;
         } else if (source is WorkspaceIconGroup) {
+            if (!should_show_workspace_widlet ()) {
+                return;
+            }
+
             list = icon_groups;
             offset = launchers.length * get_launcher_size ();
             if (background_item.has_apps) {
@@ -384,6 +427,11 @@
         if (item is NowPlayingItem) {
             return ((NowPlayingItem) item).get_dock_width ();
         }
+#if WORKSPACE_SWITCHER
+        if (item is WeatherWidletItem) {
+            return ((WeatherWidletItem) item).get_dock_width ();
+        }
+#endif
 
         return get_launcher_size ();
     }
@@ -399,9 +447,17 @@
             total += get_item_width (now_playing_item);
         }
 
-        foreach (var icon_group in icon_groups) {
-            total += get_item_width (icon_group);
+        if (should_show_workspace_widlet ()) {
+            foreach (var icon_group in icon_groups) {
+                total += get_item_width (icon_group);
+            }
         }
+
+#if WORKSPACE_SWITCHER
+        if (should_show_weather_widlet ()) {
+            total += get_item_width (weather_widlet_item);
+        }
+#endif
 
 #if WORKSPACE_SWITCHER
         total += get_item_width (dynamic_workspace_item);
@@ -409,4 +465,58 @@
 
         return total;
     }
+
+    private bool should_show_workspace_widlet () {
+#if WORKSPACE_SWITCHER
+        return workspace_widlet_enabled;
+#else
+        return false;
+#endif
+    }
+
+#if WORKSPACE_SWITCHER
+    private bool should_show_weather_widlet () {
+        return weather_widlet_enabled;
+    }
+
+    private void update_weather_widlet_state () {
+        if (settings.settings_schema.has_key (WEATHER_WIDLET_KEY)) {
+            weather_widlet_enabled = settings.get_boolean (WEATHER_WIDLET_KEY);
+        } else {
+            weather_widlet_enabled = true;
+        }
+
+        weather_widlet_item.visible = weather_widlet_enabled;
+        weather_widlet_item.sensitive = weather_widlet_enabled;
+
+        reposition_items ();
+
+        resize_animation.easing = EASE_IN_OUT_QUAD;
+        resize_animation.duration = Granite.TRANSITION_DURATION_OPEN;
+        resize_animation.value_from = get_width ();
+        resize_animation.value_to = get_total_width ();
+        resize_animation.play ();
+    }
+
+    private void update_workspace_widlet_state () {
+        if (settings.settings_schema.has_key (WORKSPACE_WIDLET_KEY)) {
+            workspace_widlet_enabled = settings.get_boolean (WORKSPACE_WIDLET_KEY);
+        } else {
+            workspace_widlet_enabled = true;
+        }
+
+        foreach (var icon_group in icon_groups) {
+            icon_group.visible = workspace_widlet_enabled;
+            icon_group.sensitive = workspace_widlet_enabled;
+        }
+
+        reposition_items ();
+
+        resize_animation.easing = EASE_IN_OUT_QUAD;
+        resize_animation.duration = Granite.TRANSITION_DURATION_OPEN;
+        resize_animation.value_from = get_width ();
+        resize_animation.value_to = get_total_width ();
+        resize_animation.play ();
+    }
+#endif
 }

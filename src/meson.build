@@ -27,6 +27,7 @@ sources = [
     'WindowSystem' / 'DesktopIntegration.vala',
     'WindowSystem' / 'Window.vala',
     'WindowSystem' / 'WindowSystem.vala',
+    'WeatherSystem' / 'WeatherWidletItem.vala',
     'WorkspaceSystem' / 'DynamicWorkspaceItem.vala',
     'WorkspaceSystem' / 'IconGroup.vala',
     'WorkspaceSystem' / 'Workspace.vala',

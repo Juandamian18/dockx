@@ -90,6 +90,10 @@ icongroup {
     padding-bottom: 0;
 }
 
+icongroup.weather-widlet-item {
+    padding: 6px 6px 0 8px;
+}
+
 icongroup .icon-group-bin {
     background: alpha(@base_color, 0.4);
     box-shadow:
@@ -320,4 +324,212 @@ backgrounditem .close-button {
 
 .now-playing-tooltip .now-playing-seek highlight {
     background: alpha(white, 0.96);
+}
+
+icongroup.weather-widlet-item .icon-group-bin,
+icongroup.weather-widlet-item.running .icon-group-bin,
+icongroup.weather-widlet-item:active .icon-group-bin {
+    border-radius: 11px;
+    background: linear-gradient(135deg, #5eaee0 0%, #4f8ebf 50%, #4f7cab 100%);
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.24),
+        inset 0 -1px 0 alpha(black, 0.16),
+        inset 0 0 0 1px alpha(white, 0.14),
+        0 6px 16px alpha(black, 0.24);
+    transition:
+        background 260ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+icongroup.weather-widlet-item.weather-preview-mode .icon-group-bin {
+    box-shadow:
+        inset 0 1px 0 alpha(white, 0.26),
+        inset 0 -1px 0 alpha(black, 0.16),
+        inset 0 0 0 1px alpha(white, 0.18),
+        0 0 0 1px alpha(#91d0ff, 0.5),
+        0 6px 16px alpha(black, 0.24);
+}
+
+icongroup.weather-widlet-item.weather-period-night.weather-cloud-clear .icon-group-bin {
+    background: linear-gradient(140deg, #0f244f 0%, #163f78 55%, #205ba1 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-night.weather-cloud-partly .icon-group-bin {
+    background: linear-gradient(140deg, #24375f 0%, #355887 54%, #4a73a7 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-night.weather-cloud-cloudy .icon-group-bin {
+    background: linear-gradient(140deg, #3c4d68 0%, #55657f 52%, #6c7f95 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-night.weather-cloud-storm .icon-group-bin {
+    background: linear-gradient(140deg, #1d2332 0%, #2a3448 55%, #3f4b66 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-dawn.weather-cloud-clear .icon-group-bin {
+    background: linear-gradient(135deg, #f7b36f 0%, #ef8f62 50%, #6d94d5 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-dawn.weather-cloud-partly .icon-group-bin {
+    background: linear-gradient(135deg, #d5a571 0%, #a88a71 50%, #6787bf 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-dawn.weather-cloud-cloudy .icon-group-bin {
+    background: linear-gradient(135deg, #b39a7a 0%, #8a8491 50%, #66789d 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-dawn.weather-cloud-storm .icon-group-bin {
+    background: linear-gradient(135deg, #7c6f67 0%, #616575 52%, #505f80 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-day.weather-cloud-clear .icon-group-bin {
+    background: linear-gradient(135deg, #41aaf3 0%, #2f86d9 52%, #2b74cc 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-day.weather-cloud-partly .icon-group-bin {
+    background: linear-gradient(135deg, #5eaee0 0%, #4f8ebf 50%, #4f7cab 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-day.weather-cloud-cloudy .icon-group-bin {
+    background: linear-gradient(135deg, #7aa0ba 0%, #6888a5 50%, #5f768f 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-day.weather-cloud-storm .icon-group-bin {
+    background: linear-gradient(135deg, #5e738d 0%, #4f6178 52%, #3c4c63 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-sunset.weather-cloud-clear .icon-group-bin {
+    background: linear-gradient(135deg, #f8a95f 0%, #ef7e59 48%, #3f72c6 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-sunset.weather-cloud-partly .icon-group-bin {
+    background: linear-gradient(135deg, #e39f6a 0%, #b97f68 52%, #5f79b0 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-sunset.weather-cloud-cloudy .icon-group-bin {
+    background: linear-gradient(135deg, #c39376 0%, #8e7484 52%, #596d93 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-sunset.weather-cloud-storm .icon-group-bin {
+    background: linear-gradient(135deg, #8f6b68 0%, #675f70 52%, #4a5876 100%);
+}
+
+.weather-widlet-content {
+    min-height: 0;
+    border-radius: 11px;
+}
+
+.weather-widlet-condition,
+.weather-widlet-city,
+.weather-widlet-temperature {
+    color: white;
+    text-shadow: 0 1px 2px alpha(black, 0.2);
+}
+
+.weather-widlet-condition {
+    font-weight: 680;
+    font-size: 0.82em;
+}
+
+.weather-widlet-city {
+    margin-top: 1px;
+    font-weight: 650;
+    font-size: 0.86em;
+    opacity: 0.97;
+}
+
+.weather-widlet-temperature {
+    margin-right: 25px;
+    font-weight: 300;
+    font-size: 2.1em;
+    letter-spacing: -0.03em;
+}
+
+.weather-widlet-icon {
+    margin-right: -12px;
+    margin-bottom: 0px;
+}
+
+icongroup.weather-widlet-item.minimal .icon-group-bin,
+icongroup.weather-widlet-item.minimal.running .icon-group-bin,
+icongroup.weather-widlet-item.minimal:active .icon-group-bin {
+    border-radius: 6px;
+}
+
+.weather-widlet-item.minimal .weather-widlet-content {
+    border-radius: 6px;
+}
+
+.weather-widlet-item.minimal .weather-widlet-temperature {
+    margin-right: 0;
+    font-size: 2em;
+    letter-spacing: -0.01em;
+    text-shadow:
+        0 1px 2px alpha(black, 0.42),
+        0 0 6px alpha(black, 0.2);
+}
+
+.weather-widlet-degree-dot {
+    color: white;
+    font-size: 1em;
+    font-weight: 700;
+    margin-top: 6px;
+    margin-right: -1px;
+    text-shadow: 0 1px 2px alpha(black, 0.46);
+}
+
+.weather-widlet-item.minimal .weather-widlet-degree-dot {
+    margin-top: 1px;
+    margin-right: -5px;
+}
+
+.weather-widlet-negative-sign {
+    color: white;
+    font-size: 0.9em;
+    font-weight: 700;
+    margin-left: -11px;
+    text-shadow: 0 1px 2px alpha(black, 0.46);
+}
+
+.weather-widlet-item.minimal .weather-widlet-negative-sign {
+    margin-top: -1px;
+    margin-left: -10px;
+}
+
+.weather-widlet-item.minimal .weather-widlet-icon {
+    margin-right: -4px;
+    margin-bottom: -2px;
+}
+
+.weather-forecast-popover {
+    min-width: 0;
+}
+
+.weather-forecast-title {
+    font-weight: 700;
+}
+
+.weather-forecast-location {
+    opacity: 0.86;
+    font-size: 0.92em;
+}
+
+.weather-forecast-row {
+    min-height: 22px;
+}
+
+.weather-forecast-day {
+    font-weight: 650;
+}
+
+.weather-forecast-icon {
+    opacity: 0.95;
+}
+
+.weather-forecast-condition {
+    opacity: 0.95;
+}
+
+.weather-forecast-temps {
+    font-weight: 600;
 }
