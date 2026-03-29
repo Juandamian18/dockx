@@ -40,6 +40,16 @@
     <file compressed="true">weather-icons/thunderstorms-overcast.png</file>
     <file compressed="true">weather-icons/thunderstorms.png</file>
     <file compressed="true">weather-icons/thunderstorms-hail.png</file>
+    <file compressed="true">lucide-icons/cloud-sun.svg</file>
+    <file compressed="true">lucide-icons/chart-candlestick.svg</file>
+    <file compressed="true">lucide-icons/clipboard.svg</file>
+    <file compressed="true">lucide-icons/cpu.svg</file>
+    <file compressed="true">lucide-icons/memory-stick.svg</file>
+    <file compressed="true">lucide-icons/thermometer.svg</file>
+    <file compressed="true">lucide-icons/monitor.svg</file>
+    <file compressed="true">lucide-icons/hard-drive.svg</file>
+    <file compressed="true">lucide-icons/trash-2.svg</file>
+    <file compressed="true">lucide-icons/layout-grid.svg</file>
     <file compressed="true">widlet-icons/cpu-image.png</file>
     <file compressed="true">widlet-icons/clipboard-empty.png</file>
     <file compressed="true">widlet-icons/clipboard-full.png</file>

@@ -380,51 +380,10 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         const int action_button_size = 28;
         var row_index = get_widlet_index (widlet_id);
 
+        var icon_resource = get_widlet_store_icon_resource (widlet_id);
         Gtk.Image icon;
-        if (widlet_id == WIDLET_ID_WEATHER) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/weather-icons/overcast.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_CPU) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/cpu-image.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_RAM) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/ram-image.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_CPUTEMP) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/cputemp-image.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_GPU) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/gpu-image.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_HARDDISK) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/harddisk-image.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_CLIPBOARD) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/clipboard-full.png") {
-                pixel_size = 22,
-                halign = CENTER,
-                valign = CENTER
-            };
-        } else if (widlet_id == WIDLET_ID_TRASH) {
-            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/trash-empty-image.png") {
+        if (icon_resource != "") {
+            icon = new Gtk.Image.from_resource (icon_resource) {
                 pixel_size = 22,
                 halign = CENTER,
                 valign = CENTER
@@ -542,6 +501,33 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         row.add_css_class ("widlet-store-row");
         row.append (row_content);
         return row;
+    }
+
+    private static string get_widlet_store_icon_resource (string widlet_id) {
+        switch (widlet_id) {
+            case WIDLET_ID_WEATHER:
+                return "/io/elementary/dock/lucide-icons/cloud-sun.svg";
+            case WIDLET_ID_STOCK:
+                return "/io/elementary/dock/lucide-icons/chart-candlestick.svg";
+            case WIDLET_ID_CLIPBOARD:
+                return "/io/elementary/dock/lucide-icons/clipboard.svg";
+            case WIDLET_ID_CPU:
+                return "/io/elementary/dock/lucide-icons/cpu.svg";
+            case WIDLET_ID_RAM:
+                return "/io/elementary/dock/lucide-icons/memory-stick.svg";
+            case WIDLET_ID_CPUTEMP:
+                return "/io/elementary/dock/lucide-icons/thermometer.svg";
+            case WIDLET_ID_GPU:
+                return "/io/elementary/dock/lucide-icons/monitor.svg";
+            case WIDLET_ID_HARDDISK:
+                return "/io/elementary/dock/lucide-icons/hard-drive.svg";
+            case WIDLET_ID_TRASH:
+                return "/io/elementary/dock/lucide-icons/trash-2.svg";
+            case WIDLET_ID_WORKSPACE:
+                return "/io/elementary/dock/lucide-icons/layout-grid.svg";
+            default:
+                return "";
+        }
     }
 
     private void bind_widlet_switch (string widlet_id, Gtk.Switch row_switch) {
