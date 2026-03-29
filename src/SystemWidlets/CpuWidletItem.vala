@@ -5,7 +5,7 @@
 
 public class Dock.CpuWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 1;
-    private const int BASE_ICON_PIXEL_SIZE = 42;
+    private const int BASE_ICON_PIXEL_SIZE = 40;
     private const int BASE_FILL_HEIGHT = 22;
     private const string ALERT_ENABLED_KEY = "widlet-cpu-alert-enabled";
     private const string ALERT_THRESHOLD_KEY = "widlet-cpu-alert-threshold";
@@ -267,7 +267,7 @@ public class Dock.CpuWidletItem : ContainerItem {
         }
 
         var scale = (double) icon_size / 48.0;
-        icon_image.pixel_size = clamp_int ((int) Math.round (BASE_ICON_PIXEL_SIZE * scale), 28, 64);
+        icon_image.pixel_size = clamp_int ((int) Math.round (BASE_ICON_PIXEL_SIZE * scale), 26, 60);
         fill_overlay.height_request = clamp_int ((int) Math.round (BASE_FILL_HEIGHT * scale), 16, 30);
     }
 

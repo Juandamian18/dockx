@@ -5,7 +5,7 @@
 
 public class Dock.RamWidletItem : ContainerItem {
     private const uint REFRESH_INTERVAL_SECONDS = 2;
-    private const int BASE_ICON_PIXEL_SIZE = 50;
+    private const int BASE_ICON_PIXEL_SIZE = 46;
     private const int BASE_FILL_HEIGHT = 22;
     private const string ALERT_ENABLED_KEY = "widlet-ram-alert-enabled";
     private const string ALERT_THRESHOLD_KEY = "widlet-ram-alert-threshold";
@@ -273,7 +273,7 @@ public class Dock.RamWidletItem : ContainerItem {
         }
 
         var scale = (double) icon_size / 48.0;
-        icon_image.pixel_size = clamp_int ((int) Math.round (BASE_ICON_PIXEL_SIZE * scale), 30, 72);
+        icon_image.pixel_size = clamp_int ((int) Math.round (BASE_ICON_PIXEL_SIZE * scale), 28, 68);
         fill_overlay.height_request = clamp_int ((int) Math.round (BASE_FILL_HEIGHT * scale), 16, 30);
     }
 
