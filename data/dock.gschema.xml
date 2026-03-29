@@ -45,6 +45,12 @@
       <description>When enabled, the stock widlet is shown in the dock widlet section.</description>
     </key>
 
+    <key type="b" name="widlet-clipboard-enabled">
+      <default>true</default>
+      <summary>Show clipboard widlet</summary>
+      <description>When enabled, the clipboard widlet is shown in the dock widlet section.</description>
+    </key>
+
     <key type="b" name="widlet-cpu-enabled">
       <default>true</default>
       <summary>Show CPU widlet</summary>
@@ -82,7 +88,7 @@
     </key>
 
     <key type="as" name="widlet-order">
-      <default>['weather', 'stock', 'cpu', 'cputemp', 'ram', 'gpu', 'harddisk', 'trash', 'workspace']</default>
+      <default>['weather', 'stock', 'clipboard', 'cpu', 'cputemp', 'ram', 'gpu', 'harddisk', 'trash', 'workspace']</default>
       <summary>Dock widlet order</summary>
       <description>Ordered list that controls how widlets are laid out in the dock area.</description>
     </key>
@@ -187,6 +193,18 @@
       <default>8</default>
       <summary>Stock widlet rotation seconds</summary>
       <description>Number of seconds each symbol stays visible before rotating to the next one.</description>
+    </key>
+
+    <key type="i" name="widlet-clipboard-max-items">
+      <default>20</default>
+      <summary>Clipboard widlet max items</summary>
+      <description>Maximum number of recent clipboard entries the widlet keeps in memory.</description>
+    </key>
+
+    <key type="as" name="widlet-clipboard-pinned-texts">
+      <default>[]</default>
+      <summary>Clipboard widlet pinned texts</summary>
+      <description>User-defined predefined text snippets always shown in the clipboard widlet panel.</description>
     </key>
 
     <key type="b" name="widlet-weather-sim-enabled">

@@ -24,6 +24,7 @@
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
     private const string STOCK_WIDLET_KEY = "widlet-stock-enabled";
+    private const string CLIPBOARD_WIDLET_KEY = "widlet-clipboard-enabled";
     private const string CPU_WIDLET_KEY = "widlet-cpu-enabled";
     private const string RAM_WIDLET_KEY = "widlet-ram-enabled";
     private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
@@ -33,6 +34,7 @@
     private const string WIDLET_ORDER_KEY = "widlet-order";
     private const string WIDLET_ID_WEATHER = "weather";
     private const string WIDLET_ID_STOCK = "stock";
+    private const string WIDLET_ID_CLIPBOARD = "clipboard";
     private const string WIDLET_ID_CPU = "cpu";
     private const string WIDLET_ID_RAM = "ram";
     private const string WIDLET_ID_CPUTEMP = "cputemp";
@@ -45,6 +47,7 @@
     private bool workspace_widlet_enabled = true;
     private bool weather_widlet_enabled = true;
     private bool stock_widlet_enabled = true;
+    private bool clipboard_widlet_enabled = true;
     private bool cpu_widlet_enabled = true;
     private bool ram_widlet_enabled = true;
     private bool cputemp_widlet_enabled = true;
@@ -53,6 +56,7 @@
     private bool trash_widlet_enabled = true;
     private WeatherWidletItem weather_widlet_item;
     private StockWidletItem stock_widlet_item;
+    private ClipboardWidletItem clipboard_widlet_item;
     private CpuWidletItem cpu_widlet_item;
     private RamWidletItem ram_widlet_item;
     private CpuTempWidletItem cputemp_widlet_item;
@@ -84,6 +88,7 @@
         dynamic_workspace_item = new DynamicWorkspaceIcon ();
         weather_widlet_item = new WeatherWidletItem ();
         stock_widlet_item = new StockWidletItem ();
+        clipboard_widlet_item = new ClipboardWidletItem ();
         cpu_widlet_item = new CpuWidletItem ();
         ram_widlet_item = new RamWidletItem ();
         cputemp_widlet_item = new CpuTempWidletItem ();
@@ -125,6 +130,10 @@
         if (settings.settings_schema.has_key (STOCK_WIDLET_KEY)) {
             stock_widlet_enabled = settings.get_boolean (STOCK_WIDLET_KEY);
             settings.changed[STOCK_WIDLET_KEY].connect (update_stock_widlet_state);
+        }
+        if (settings.settings_schema.has_key (CLIPBOARD_WIDLET_KEY)) {
+            clipboard_widlet_enabled = settings.get_boolean (CLIPBOARD_WIDLET_KEY);
+            settings.changed[CLIPBOARD_WIDLET_KEY].connect (update_clipboard_widlet_state);
         }
         if (settings.settings_schema.has_key (CPU_WIDLET_KEY)) {
             cpu_widlet_enabled = settings.get_boolean (CPU_WIDLET_KEY);
@@ -280,6 +289,7 @@
             update_workspace_widlet_state ();
             update_weather_widlet_state ();
             update_stock_widlet_state ();
+            update_clipboard_widlet_state ();
             update_cpu_widlet_state ();
             update_ram_widlet_state ();
             update_cputemp_widlet_state ();
@@ -566,6 +576,10 @@
                 if (should_show_stock_widlet ()) {
                     position_item (stock_widlet_item, ref x);
                 }
+            } else if (widlet_id == WIDLET_ID_CLIPBOARD) {
+                if (should_show_clipboard_widlet ()) {
+                    position_item (clipboard_widlet_item, ref x);
+                }
             } else if (widlet_id == WIDLET_ID_CPU) {
                 if (should_show_cpu_widlet ()) {
                     position_item (cpu_widlet_item, ref x);
@@ -611,6 +625,10 @@
             } else if (widlet_id == WIDLET_ID_STOCK) {
                 if (should_show_stock_widlet ()) {
                     total += get_item_width (stock_widlet_item);
+                }
+            } else if (widlet_id == WIDLET_ID_CLIPBOARD) {
+                if (should_show_clipboard_widlet ()) {
+                    total += get_item_width (clipboard_widlet_item);
                 }
             } else if (widlet_id == WIDLET_ID_CPU) {
                 if (should_show_cpu_widlet ()) {
@@ -660,6 +678,8 @@
                 offset += get_item_width (weather_widlet_item);
             } else if (widlet_id == WIDLET_ID_STOCK && should_show_stock_widlet ()) {
                 offset += get_item_width (stock_widlet_item);
+            } else if (widlet_id == WIDLET_ID_CLIPBOARD && should_show_clipboard_widlet ()) {
+                offset += get_item_width (clipboard_widlet_item);
             } else if (widlet_id == WIDLET_ID_CPU && should_show_cpu_widlet ()) {
                 offset += get_item_width (cpu_widlet_item);
             } else if (widlet_id == WIDLET_ID_RAM && should_show_ram_widlet ()) {
@@ -682,6 +702,7 @@
         string[] order = {};
         bool has_weather = false;
         bool has_stock = false;
+        bool has_clipboard = false;
         bool has_cpu = false;
         bool has_ram = false;
         bool has_cputemp = false;
@@ -699,6 +720,9 @@
                 } else if (widlet_id == WIDLET_ID_STOCK && !has_stock) {
                     order += WIDLET_ID_STOCK;
                     has_stock = true;
+                } else if (widlet_id == WIDLET_ID_CLIPBOARD && !has_clipboard) {
+                    order += WIDLET_ID_CLIPBOARD;
+                    has_clipboard = true;
                 } else if (widlet_id == WIDLET_ID_CPU && !has_cpu) {
                     order += WIDLET_ID_CPU;
                     has_cpu = true;
@@ -729,6 +753,9 @@
         }
         if (!has_stock) {
             order += WIDLET_ID_STOCK;
+        }
+        if (!has_clipboard) {
+            order += WIDLET_ID_CLIPBOARD;
         }
         if (!has_cpu) {
             order += WIDLET_ID_CPU;
@@ -761,6 +788,10 @@
 
     private bool should_show_stock_widlet () {
         return stock_widlet_enabled;
+    }
+
+    private bool should_show_clipboard_widlet () {
+        return clipboard_widlet_enabled;
     }
 
     private bool should_show_cpu_widlet () {
@@ -815,6 +846,25 @@
 
         stock_widlet_item.visible = stock_widlet_enabled;
         stock_widlet_item.sensitive = stock_widlet_enabled;
+
+        reposition_items ();
+
+        resize_animation.easing = EASE_IN_OUT_QUAD;
+        resize_animation.duration = Granite.TRANSITION_DURATION_OPEN;
+        resize_animation.value_from = get_width ();
+        resize_animation.value_to = get_total_width ();
+        resize_animation.play ();
+    }
+
+    private void update_clipboard_widlet_state () {
+        if (settings.settings_schema.has_key (CLIPBOARD_WIDLET_KEY)) {
+            clipboard_widlet_enabled = settings.get_boolean (CLIPBOARD_WIDLET_KEY);
+        } else {
+            clipboard_widlet_enabled = true;
+        }
+
+        clipboard_widlet_item.visible = clipboard_widlet_enabled;
+        clipboard_widlet_item.sensitive = clipboard_widlet_enabled;
 
         reposition_items ();
 

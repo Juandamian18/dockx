@@ -7,6 +7,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
     private const string STOCK_WIDLET_KEY = "widlet-stock-enabled";
+    private const string CLIPBOARD_WIDLET_KEY = "widlet-clipboard-enabled";
     private const string CPU_WIDLET_KEY = "widlet-cpu-enabled";
     private const string RAM_WIDLET_KEY = "widlet-ram-enabled";
     private const string CPUTEMP_WIDLET_KEY = "widlet-cputemp-enabled";
@@ -26,6 +27,11 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WEATHER_SIM_HOUR_KEY = "widlet-weather-sim-hour";
     private const string STOCK_SYMBOLS_KEY = "widlet-stock-symbols";
     private const string STOCK_ROTATION_SECONDS_KEY = "widlet-stock-rotation-seconds";
+    private const string CLIPBOARD_MAX_ITEMS_KEY = "widlet-clipboard-max-items";
+    private const string CLIPBOARD_PINNED_TEXTS_KEY = "widlet-clipboard-pinned-texts";
+    private const int CLIPBOARD_MIN_ITEMS = 5;
+    private const int CLIPBOARD_MAX_ITEMS = 200;
+    private const int CLIPBOARD_MAX_PINNED_ITEMS = 120;
     private const string CPU_ALERT_ENABLED_KEY = "widlet-cpu-alert-enabled";
     private const string CPU_ALERT_THRESHOLD_KEY = "widlet-cpu-alert-threshold";
     private const string RAM_ALERT_ENABLED_KEY = "widlet-ram-alert-enabled";
@@ -40,6 +46,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WIDLET_ID_WORKSPACE = "workspace";
     private const string WIDLET_ID_WEATHER = "weather";
     private const string WIDLET_ID_STOCK = "stock";
+    private const string WIDLET_ID_CLIPBOARD = "clipboard";
     private const string WIDLET_ID_CPU = "cpu";
     private const string WIDLET_ID_RAM = "ram";
     private const string WIDLET_ID_CPUTEMP = "cputemp";
@@ -53,6 +60,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private Gtk.Window? widlet_window = null;
     private Gtk.Window? weather_settings_window = null;
     private Gtk.Window? stock_settings_window = null;
+    private Gtk.Window? clipboard_settings_window = null;
     private Gtk.Window? workspace_settings_window = null;
     private Gtk.Window? usage_alert_settings_window = null;
     private string usage_alert_settings_widlet_id = "";
@@ -143,6 +151,10 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
         if (stock_settings_window != null) {
             stock_settings_window.destroy ();
+        }
+
+        if (clipboard_settings_window != null) {
+            clipboard_settings_window.destroy ();
         }
 
         if (workspace_settings_window != null) {
@@ -280,6 +292,15 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                         true
                     ));
                     break;
+                case WIDLET_ID_CLIPBOARD:
+                    widlet_list_box.append (create_widlet_store_row (
+                        widlet_id,
+                        "edit-paste-symbolic",
+                        _("Clipboard Widlet"),
+                        _("Shows recent copied text and pinned snippets for quick reuse."),
+                        true
+                    ));
+                    break;
                 case WIDLET_ID_CPU:
                     widlet_list_box.append (create_widlet_store_row (
                         widlet_id,
@@ -392,6 +413,12 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             };
         } else if (widlet_id == WIDLET_ID_HARDDISK) {
             icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/harddisk-image.png") {
+                pixel_size = 22,
+                halign = CENTER,
+                valign = CENTER
+            };
+        } else if (widlet_id == WIDLET_ID_CLIPBOARD) {
+            icon = new Gtk.Image.from_resource ("/io/elementary/dock/widlet-icons/clipboard-full.png") {
                 pixel_size = 22,
                 halign = CENTER,
                 valign = CENTER
@@ -526,6 +553,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             case WIDLET_ID_STOCK:
                 key = STOCK_WIDLET_KEY;
                 break;
+            case WIDLET_ID_CLIPBOARD:
+                key = CLIPBOARD_WIDLET_KEY;
+                break;
             case WIDLET_ID_CPU:
                 key = CPU_WIDLET_KEY;
                 break;
@@ -565,6 +595,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                 break;
             case WIDLET_ID_STOCK:
                 open_stock_settings_window ();
+                break;
+            case WIDLET_ID_CLIPBOARD:
+                open_clipboard_settings_window ();
                 break;
             case WIDLET_ID_CPU:
             case WIDLET_ID_RAM:
@@ -904,6 +937,197 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         stock_settings_window.present ();
     }
 
+    private void open_clipboard_settings_window () {
+        if (clipboard_settings_window != null) {
+            clipboard_settings_window.present ();
+            return;
+        }
+
+        var title = new Gtk.Label (_("Clipboard Widlet Settings")) {
+            xalign = 0
+        };
+        title.add_css_class ("title-3");
+
+        var subtitle = new Gtk.Label (_("Set clipboard history size and define pinned text snippets shown in the widlet popover.")) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        subtitle.add_css_class (Granite.CssClass.DIM);
+        subtitle.add_css_class ("widlet-settings-subtitle");
+
+        var max_items_spin = new Gtk.SpinButton.with_range (CLIPBOARD_MIN_ITEMS, CLIPBOARD_MAX_ITEMS, 1) {
+            digits = 0,
+            numeric = true,
+            width_chars = 4
+        };
+        if (dock_settings.settings_schema.has_key (CLIPBOARD_MAX_ITEMS_KEY)) {
+            max_items_spin.value = dock_settings.get_int (CLIPBOARD_MAX_ITEMS_KEY);
+            max_items_spin.value_changed.connect (() => {
+                dock_settings.set_int (CLIPBOARD_MAX_ITEMS_KEY, (int) Math.round (max_items_spin.value));
+            });
+        } else {
+            max_items_spin.value = 20;
+            max_items_spin.sensitive = false;
+        }
+
+        var max_items_suffix = new Gtk.Label (_("items")) {
+            valign = CENTER
+        };
+        var max_items_control = new Gtk.Box (HORIZONTAL, 6) {
+            halign = END
+        };
+        max_items_control.append (max_items_spin);
+        max_items_control.append (max_items_suffix);
+
+        var pinned_title = new Gtk.Label (_("Pinned Texts")) {
+            xalign = 0
+        };
+        pinned_title.add_css_class ("widlet-settings-section-title");
+
+        var pinned_subtitle = new Gtk.Label (_("Add one snippet per line. These always stay available at the top of the clipboard panel.")) {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        pinned_subtitle.add_css_class (Granite.CssClass.DIM);
+        pinned_subtitle.add_css_class (Granite.CssClass.SMALL);
+
+        var pinned_text_view = new Gtk.TextView () {
+            wrap_mode = WORD_CHAR,
+            monospace = false,
+            left_margin = 8,
+            right_margin = 8,
+            top_margin = 8,
+            bottom_margin = 8
+        };
+        pinned_text_view.add_css_class ("widlet-clipboard-pinned-editor");
+
+        if (dock_settings.settings_schema.has_key (CLIPBOARD_PINNED_TEXTS_KEY)) {
+            pinned_text_view.buffer.text = string.joinv ("\n", dock_settings.get_strv (CLIPBOARD_PINNED_TEXTS_KEY));
+        } else {
+            pinned_text_view.buffer.text = "";
+            pinned_text_view.sensitive = false;
+        }
+
+        var pinned_scroll = new Gtk.ScrolledWindow () {
+            child = pinned_text_view,
+            hscrollbar_policy = NEVER,
+            vscrollbar_policy = AUTOMATIC,
+            min_content_height = 120,
+            max_content_height = 180
+        };
+
+        var pinned_apply_button = new Gtk.Button.with_label (_("Apply Pinned Texts")) {
+            halign = END
+        };
+        pinned_apply_button.add_css_class (Granite.CssClass.SUGGESTED);
+
+        var pinned_status_label = new Gtk.Label ("") {
+            xalign = 0,
+            wrap = true,
+            max_width_chars = 42
+        };
+        pinned_status_label.add_css_class (Granite.CssClass.DIM);
+        pinned_status_label.add_css_class (Granite.CssClass.SMALL);
+
+        pinned_apply_button.clicked.connect (() => {
+            apply_clipboard_pinned_texts_from_buffer (pinned_text_view.buffer, pinned_status_label);
+        });
+
+        var content = new Gtk.Box (VERTICAL, 10) {
+            margin_start = 16,
+            margin_end = 16,
+            margin_top = 16,
+            margin_bottom = 16,
+            width_request = 430
+        };
+        content.add_css_class ("widlet-settings-window");
+        content.append (title);
+        content.append (subtitle);
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (create_setting_row (
+            _("Remembered Clipboard Items"),
+            _("Maximum recent entries stored by the clipboard widlet."),
+            max_items_control
+        ));
+        content.append (new Gtk.Separator (HORIZONTAL));
+        content.append (pinned_title);
+        content.append (pinned_subtitle);
+        content.append (pinned_scroll);
+        content.append (pinned_apply_button);
+        content.append (pinned_status_label);
+
+        clipboard_settings_window = new Gtk.Window () {
+            title = _("Clipboard Widlet Settings"),
+            child = content,
+            resizable = false,
+            modal = false,
+            hide_on_close = true
+        };
+
+        attach_window_to_application (clipboard_settings_window);
+        clipboard_settings_window.present ();
+    }
+
+    private void apply_clipboard_pinned_texts_from_buffer (Gtk.TextBuffer buffer, Gtk.Label status_label) {
+        if (!dock_settings.settings_schema.has_key (CLIPBOARD_PINNED_TEXTS_KEY)) {
+            status_label.label = _("Pinned clipboard texts setting is unavailable.");
+            return;
+        }
+
+        Gtk.TextIter start_iter;
+        Gtk.TextIter end_iter;
+        buffer.get_bounds (out start_iter, out end_iter);
+        var raw_text = buffer.get_text (start_iter, end_iter, false);
+
+        var normalized_items = normalize_clipboard_pinned_text_input (raw_text);
+        dock_settings.set_strv (CLIPBOARD_PINNED_TEXTS_KEY, normalized_items);
+        buffer.text = string.joinv ("\n", normalized_items);
+
+        if (normalized_items.length == 0) {
+            status_label.label = _("Pinned texts cleared.");
+        } else {
+            status_label.label = _("Pinned texts updated (%d).").printf (normalized_items.length);
+        }
+    }
+
+    private static string[] normalize_clipboard_pinned_text_input (string raw_input) {
+        string[] parsed = {};
+        foreach (var raw_line in raw_input.split ("\n")) {
+            var line = normalize_clipboard_pinned_line (raw_line);
+            if (line == "" || array_contains_string (parsed, line)) {
+                continue;
+            }
+
+            parsed += line;
+            if (parsed.length >= CLIPBOARD_MAX_PINNED_ITEMS) {
+                break;
+            }
+        }
+
+        return parsed;
+    }
+
+    private static string normalize_clipboard_pinned_line (string raw_line) {
+        var line = raw_line.replace ("\r", "").strip ();
+        if (line == "") {
+            return "";
+        }
+
+        return line;
+    }
+
+    private static bool array_contains_string (string[] values, string target) {
+        foreach (var value in values) {
+            if (value == target) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void apply_stock_symbols_from_entry (Gtk.Entry symbols_entry, Gtk.Label status_label) {
         if (!dock_settings.settings_schema.has_key (STOCK_SYMBOLS_KEY)) {
             status_label.label = _("Stock symbols setting is unavailable.");
@@ -1239,6 +1463,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         string[] normalized = {};
         bool has_weather = false;
         bool has_stock = false;
+        bool has_clipboard = false;
         bool has_cpu = false;
         bool has_ram = false;
         bool has_cputemp = false;
@@ -1255,6 +1480,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             } else if (widlet_id == WIDLET_ID_STOCK && !has_stock) {
                 normalized += WIDLET_ID_STOCK;
                 has_stock = true;
+            } else if (widlet_id == WIDLET_ID_CLIPBOARD && !has_clipboard) {
+                normalized += WIDLET_ID_CLIPBOARD;
+                has_clipboard = true;
             } else if (widlet_id == WIDLET_ID_CPU && !has_cpu) {
                 normalized += WIDLET_ID_CPU;
                 has_cpu = true;
@@ -1284,6 +1512,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         }
         if (!has_stock) {
             normalized += WIDLET_ID_STOCK;
+        }
+        if (!has_clipboard) {
+            normalized += WIDLET_ID_CLIPBOARD;
         }
         if (!has_cpu) {
             normalized += WIDLET_ID_CPU;
