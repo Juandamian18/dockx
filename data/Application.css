@@ -355,19 +355,27 @@ icongroup.weather-widlet-item.weather-preview-mode .icon-group-bin {
 }
 
 icongroup.weather-widlet-item.weather-period-night.weather-cloud-clear .icon-group-bin {
-    background: linear-gradient(140deg, #0f244f 0%, #163f78 55%, #205ba1 100%);
+    background: linear-gradient(140deg, #060b1a 0%, #0f2148 54%, #1c3c72 100%);
 }
 
 icongroup.weather-widlet-item.weather-period-night.weather-cloud-partly .icon-group-bin {
-    background: linear-gradient(140deg, #24375f 0%, #355887 54%, #4a73a7 100%);
+    background: linear-gradient(140deg, #0d152c 0%, #1b2e53 54%, #2c4b75 100%);
 }
 
 icongroup.weather-widlet-item.weather-period-night.weather-cloud-cloudy .icon-group-bin {
-    background: linear-gradient(140deg, #3c4d68 0%, #55657f 52%, #6c7f95 100%);
+    background: linear-gradient(140deg, #161d2d 0%, #273246 52%, #39485f 100%);
 }
 
 icongroup.weather-widlet-item.weather-period-night.weather-cloud-storm .icon-group-bin {
-    background: linear-gradient(140deg, #1d2332 0%, #2a3448 55%, #3f4b66 100%);
+    background: linear-gradient(140deg, #080b13 0%, #111827 55%, #1c2638 100%);
+}
+
+icongroup.weather-widlet-item.weather-period-night .icon-group-bin {
+    box-shadow:
+        inset 0 1px 0 alpha(#8eb7ff, 0.09),
+        inset 0 -1px 0 alpha(black, 0.38),
+        inset 0 0 0 1px alpha(#090f1f, 0.7),
+        0 6px 16px alpha(black, 0.34);
 }
 
 icongroup.weather-widlet-item.weather-period-dawn.weather-cloud-clear .icon-group-bin {
