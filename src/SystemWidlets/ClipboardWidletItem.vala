@@ -4,9 +4,9 @@
  */
 
 public class Dock.ClipboardWidletItem : ContainerItem {
-    private const int BASE_ICON_PIXEL_SIZE = 46;
-    private const int ICON_SOURCE_WIDTH = 48;
-    private const int ICON_SOURCE_HEIGHT = 46;
+    private const int BASE_ICON_PIXEL_SIZE = 68;
+    private const int ICON_SOURCE_WIDTH = 152;
+    private const int ICON_SOURCE_HEIGHT = 152;
     private const string MAX_ITEMS_KEY = "widlet-clipboard-max-items";
     private const string PINNED_TEXTS_KEY = "widlet-clipboard-pinned-texts";
     private const string CLIPBOARD_EMPTY_ICON = "/io/elementary/dock/widlet-icons/clipboard-empty.png";
@@ -385,7 +385,7 @@ public class Dock.ClipboardWidletItem : ContainerItem {
             add_css_class ("widlet-size-large");
         }
 
-        var scaled = clamp_int ((int) Math.round ((double) BASE_ICON_PIXEL_SIZE * (double) icon_size / 48.0), 32, 64);
+        var scaled = clamp_int ((int) Math.round ((double) BASE_ICON_PIXEL_SIZE * (double) icon_size / 48.0), 42, 96);
         icon_image.width_request = scaled;
         icon_image.height_request = (int) Math.round (((double) scaled * (double) ICON_SOURCE_HEIGHT) / (double) ICON_SOURCE_WIDTH);
     }

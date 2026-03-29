@@ -840,8 +840,8 @@ icongroup.widlet-alert-flash:active .icon-group-bin {
 
 .clipboard-widlet-icon {
     opacity: 1;
-    margin-right: 1px;
-    margin-bottom: -9px;
+    margin-right: 0;
+    margin-bottom: -50px;
 }
 
 .clipboard-has-items .clipboard-widlet-icon {
@@ -849,13 +849,13 @@ icongroup.widlet-alert-flash:active .icon-group-bin {
 }
 
 .widlet-size-small.clipboard-widlet-item .clipboard-widlet-icon {
-    margin-right: 1px;
-    margin-bottom: -7px;
+    margin-right: 0;
+    margin-bottom: -33px;
 }
 
 .widlet-size-large.clipboard-widlet-item .clipboard-widlet-icon {
     margin-right: 0;
-    margin-bottom: -12px;
+    margin-bottom: -67px;
 }
 
 .widlet-size-small.harddisk-widlet-item .usage-widlet-icon {
@@ -869,15 +869,24 @@ icongroup.widlet-alert-flash:active .icon-group-bin {
 }
 
 .trash-widlet-item .trash-widlet-icon {
-    margin-bottom: -2px;
+    margin-right: 0;
+    margin-bottom: -30px;
 }
 
 .widlet-size-small.trash-widlet-item .trash-widlet-icon {
-    margin-bottom: -1px;
+    margin-right: 0;
+    margin-bottom: -20px;
 }
 
 .widlet-size-large.trash-widlet-item .trash-widlet-icon {
-    margin-bottom: -3px;
+    margin-right: 0;
+    margin-bottom: -40px;
+}
+
+.trash-widlet-content,
+.trash-widlet-surface {
+    min-height: 0;
+    border-radius: 10px;
 }
 
 .usage-widlet-fill {

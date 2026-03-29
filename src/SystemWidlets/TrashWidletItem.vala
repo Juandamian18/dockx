@@ -11,7 +11,7 @@ public class Dock.TrashWidletItem : ContainerItem {
     private const string TRASH_URI = "trash:///";
     private const string TRASH_EMPTY_ICON = "/io/elementary/dock/widlet-icons/trash-empty-image.png";
     private const string TRASH_FULL_ICON = "/io/elementary/dock/widlet-icons/trash-full-image.png";
-    private const int ICON_PIXEL_SIZE = 44;
+    private const int BASE_ICON_PIXEL_SIZE = 50;
 
     private Gtk.Image icon_image;
     private SimpleAction empty_trash_action;
@@ -42,21 +42,26 @@ public class Dock.TrashWidletItem : ContainerItem {
         popover_menu.set_parent (this);
 
         icon_image = new Gtk.Image.from_resource (TRASH_EMPTY_ICON) {
-            pixel_size = ICON_PIXEL_SIZE,
-            width_request = ICON_PIXEL_SIZE,
-            height_request = ICON_PIXEL_SIZE,
+            pixel_size = BASE_ICON_PIXEL_SIZE,
             halign = CENTER,
-            valign = CENTER,
+            valign = END,
             can_target = false
         };
         icon_image.add_css_class ("trash-widlet-icon");
 
-        var content = new Gtk.Box (HORIZONTAL, 0) {
-            halign = CENTER,
-            valign = CENTER,
+        var base_surface = new Gtk.Box (HORIZONTAL, 0) {
             can_target = false
         };
-        content.append (icon_image);
+        base_surface.add_css_class ("trash-widlet-surface");
+
+        var content = new Gtk.Overlay () {
+            child = base_surface,
+            overflow = HIDDEN
+        };
+        content.add_css_class ("trash-widlet-content");
+        content.add_overlay (icon_image);
+        content.set_measure_overlay (icon_image, false);
+
         child = content;
 
         gesture_click.button = 0;
@@ -145,7 +150,7 @@ public class Dock.TrashWidletItem : ContainerItem {
             add_css_class ("widlet-size-large");
         }
 
-        var scaled = clamp_int ((int) Math.round ((double) ICON_PIXEL_SIZE * (double) icon_size / 48.0), 32, 62);
+        var scaled = clamp_int ((int) Math.round ((double) BASE_ICON_PIXEL_SIZE * (double) icon_size / 48.0), 32, 76);
         icon_image.pixel_size = scaled;
         icon_image.width_request = scaled;
         icon_image.height_request = scaled;
