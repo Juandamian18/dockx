@@ -5,6 +5,7 @@
 
 public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
+    private const string NOW_PLAYING_WIDLET_KEY = "widlet-now-playing-enabled";
     private const string WEATHER_WIDLET_KEY = "widlet-weather-enabled";
     private const string STOCK_WIDLET_KEY = "widlet-stock-enabled";
     private const string CLIPBOARD_WIDLET_KEY = "widlet-clipboard-enabled";
@@ -21,10 +22,6 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string WEATHER_LATITUDE_KEY = "widlet-weather-latitude";
     private const string WEATHER_LONGITUDE_KEY = "widlet-weather-longitude";
     private const string WEATHER_UNIT_KEY = "widlet-weather-unit";
-    private const string WEATHER_SIM_ENABLED_KEY = "widlet-weather-sim-enabled";
-    private const string WEATHER_SIM_CODE_KEY = "widlet-weather-sim-weather-code";
-    private const string WEATHER_SIM_TEMPERATURE_KEY = "widlet-weather-sim-temperature";
-    private const string WEATHER_SIM_HOUR_KEY = "widlet-weather-sim-hour";
     private const string STOCK_SYMBOLS_KEY = "widlet-stock-symbols";
     private const string STOCK_ROTATION_SECONDS_KEY = "widlet-stock-rotation-seconds";
     private const string CLIPBOARD_MAX_ITEMS_KEY = "widlet-clipboard-max-items";
@@ -44,6 +41,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private const string HARDDISK_ALERT_THRESHOLD_KEY = "widlet-harddisk-alert-threshold";
 
     private const string WIDLET_ID_WORKSPACE = "workspace";
+    private const string WIDLET_ID_NOW_PLAYING = "nowplaying";
     private const string WIDLET_ID_WEATHER = "weather";
     private const string WIDLET_ID_STOCK = "stock";
     private const string WIDLET_ID_CLIPBOARD = "clipboard";
@@ -272,6 +270,14 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         widlet_order = normalize_widlet_order (widlet_order);
         clear_box (widlet_list_box);
 
+        widlet_list_box.append (create_widlet_store_row (
+            WIDLET_ID_NOW_PLAYING,
+            "audio-x-generic-symbolic",
+            _("Now Playing Widlet"),
+            _("Shows the current media card with playback controls when a player is active."),
+            false
+        ));
+
         foreach (var widlet_id in widlet_order) {
             switch (widlet_id) {
                 case WIDLET_ID_WEATHER:
@@ -458,8 +464,12 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         };
         reorder_controls.append (move_up_button);
         reorder_controls.append (move_down_button);
+        if (row_index < 0) {
+            reorder_controls.sensitive = false;
+            reorder_controls.visible = false;
+        }
 
-        var settings_button = new Gtk.Button.from_icon_name ("emblem-system-symbolic") {
+        var settings_button = new Gtk.Button.from_icon_name ("preferences-system-symbolic") {
             valign = CENTER,
             width_request = action_button_size,
             height_request = action_button_size
@@ -505,6 +515,8 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
 
     private static string get_widlet_store_icon_resource (string widlet_id) {
         switch (widlet_id) {
+            case WIDLET_ID_NOW_PLAYING:
+                return "/io/elementary/dock/lucide-icons/music.svg";
             case WIDLET_ID_WEATHER:
                 return "/io/elementary/dock/lucide-icons/cloud-sun.svg";
             case WIDLET_ID_STOCK:
@@ -533,6 +545,9 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
     private void bind_widlet_switch (string widlet_id, Gtk.Switch row_switch) {
         string key = WORKSPACE_WIDLET_KEY;
         switch (widlet_id) {
+            case WIDLET_ID_NOW_PLAYING:
+                key = NOW_PLAYING_WIDLET_KEY;
+                break;
             case WIDLET_ID_WEATHER:
                 key = WEATHER_WIDLET_KEY;
                 break;
@@ -1202,38 +1217,6 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         weather_unit_combo.append ("celsius", _("Celsius (°C)"));
         weather_unit_combo.append ("fahrenheit", _("Fahrenheit (°F)"));
 
-        var simulator_enabled_switch = new Gtk.Switch () {
-            halign = END,
-            valign = CENTER
-        };
-
-        var simulator_code_combo = new Gtk.ComboBoxText ();
-        foreach (var code in get_open_meteo_weather_codes ()) {
-            simulator_code_combo.append (code.to_string (), "%d - %s".printf (code, weather_code_to_preview_label (code)));
-        }
-
-        var simulator_temperature_spin = new Gtk.SpinButton.with_range (-50, 140, 1) {
-            digits = 0,
-            numeric = true,
-            width_chars = 4
-        };
-
-        var simulator_hour_spin = new Gtk.SpinButton.with_range (0, 23, 1) {
-            digits = 0,
-            numeric = true,
-            width_chars = 3
-        };
-
-        var simulator_temperature_unit_label = new Gtk.Label ("°C") {
-            valign = CENTER
-        };
-
-        var simulator_temperature_control = new Gtk.Box (HORIZONTAL, 6) {
-            halign = END
-        };
-        simulator_temperature_control.append (simulator_temperature_spin);
-        simulator_temperature_control.append (simulator_temperature_unit_label);
-
         if (dock_settings.settings_schema.has_key (WEATHER_UNIT_KEY)) {
             var configured_unit = dock_settings.get_string (WEATHER_UNIT_KEY).strip ().down ();
             weather_unit_combo.active_id = configured_unit == "fahrenheit" ? "fahrenheit" : "celsius";
@@ -1245,56 +1228,10 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
                 }
 
                 dock_settings.set_string (WEATHER_UNIT_KEY, selected_unit);
-                simulator_temperature_unit_label.label = selected_unit == "fahrenheit" ? "°F" : "°C";
             });
         } else {
             weather_unit_combo.active_id = "celsius";
             weather_unit_combo.sensitive = false;
-        }
-        simulator_temperature_unit_label.label = weather_unit_combo.get_active_id () == "fahrenheit" ? "°F" : "°C";
-
-        if (dock_settings.settings_schema.has_key (WEATHER_SIM_ENABLED_KEY)) {
-            dock_settings.bind (WEATHER_SIM_ENABLED_KEY, simulator_enabled_switch, "active", DEFAULT);
-        } else {
-            simulator_enabled_switch.active = false;
-            simulator_enabled_switch.sensitive = false;
-        }
-
-        if (dock_settings.settings_schema.has_key (WEATHER_SIM_CODE_KEY)) {
-            simulator_code_combo.active_id = dock_settings.get_int (WEATHER_SIM_CODE_KEY).to_string ();
-            if (simulator_code_combo.get_active_id () == null) {
-                simulator_code_combo.active = 0;
-            }
-
-            simulator_code_combo.changed.connect (() => {
-                var selected_code = simulator_code_combo.get_active_id ();
-                if (selected_code == null || selected_code == "") {
-                    return;
-                }
-
-                dock_settings.set_int (WEATHER_SIM_CODE_KEY, int.parse (selected_code));
-            });
-        } else {
-            simulator_code_combo.active = 0;
-            simulator_code_combo.sensitive = false;
-        }
-
-        if (dock_settings.settings_schema.has_key (WEATHER_SIM_TEMPERATURE_KEY)) {
-            simulator_temperature_spin.value = dock_settings.get_double (WEATHER_SIM_TEMPERATURE_KEY);
-            simulator_temperature_spin.value_changed.connect (() => {
-                dock_settings.set_double (WEATHER_SIM_TEMPERATURE_KEY, simulator_temperature_spin.value);
-            });
-        } else {
-            simulator_temperature_spin.sensitive = false;
-        }
-
-        if (dock_settings.settings_schema.has_key (WEATHER_SIM_HOUR_KEY)) {
-            simulator_hour_spin.value = dock_settings.get_int (WEATHER_SIM_HOUR_KEY);
-            simulator_hour_spin.value_changed.connect (() => {
-                dock_settings.set_int (WEATHER_SIM_HOUR_KEY, (int) Math.round (simulator_hour_spin.value));
-            });
-        } else {
-            simulator_hour_spin.sensitive = false;
         }
 
         var title = new Gtk.Label (_("Weather Widlet Settings")) {
@@ -1302,7 +1239,7 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         };
         title.add_css_class ("title-3");
 
-        var subtitle = new Gtk.Label (_("Customize weather units, location, minimal mode and preview controls.")) {
+        var subtitle = new Gtk.Label (_("Customize weather units, location and minimal mode.")) {
             xalign = 0,
             wrap = true,
             max_width_chars = 42
@@ -1350,46 +1287,6 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         location_box.append (city_row);
         location_box.append (city_status);
 
-        var simulator_title = new Gtk.Label (_("Weather Preview Tool")) {
-            xalign = 0
-        };
-        simulator_title.add_css_class ("widlet-settings-section-title");
-
-        var simulator_subtitle = new Gtk.Label (_("Temporary tool to preview all Open-Meteo weather types.")) {
-            xalign = 0,
-            wrap = true,
-            max_width_chars = 40
-        };
-        simulator_subtitle.add_css_class (Granite.CssClass.DIM);
-        simulator_subtitle.add_css_class (Granite.CssClass.SMALL);
-
-        var simulator_box = new Gtk.Box (VERTICAL, 8);
-        simulator_box.append (simulator_title);
-        simulator_box.append (simulator_subtitle);
-        simulator_box.append (create_setting_row (
-            _("Enable Preview"),
-            _("Show simulated weather values instead of live Open-Meteo data."),
-            simulator_enabled_switch
-        ));
-        simulator_box.append (new Gtk.Separator (HORIZONTAL));
-        simulator_box.append (create_setting_row (
-            _("Weather Type"),
-            _("Select any weather code available in Open-Meteo."),
-            simulator_code_combo
-        ));
-        simulator_box.append (new Gtk.Separator (HORIZONTAL));
-        simulator_box.append (create_setting_row (
-            _("Simulated Temperature"),
-            _("Temperature shown in preview mode."),
-            simulator_temperature_control
-        ));
-        simulator_box.append (new Gtk.Separator (HORIZONTAL));
-        simulator_box.append (create_setting_row (
-            _("Simulated Hour"),
-            _("Hour 0-23 used for day/night gradient behavior."),
-            simulator_hour_spin
-        ));
-
         city_apply_button.clicked.connect (() => {
             geocode_and_store_city.begin (city_entry.text, city_status, city_entry);
         });
@@ -1422,8 +1319,6 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
         ));
         content.append (new Gtk.Separator (HORIZONTAL));
         content.append (location_box);
-        content.append (new Gtk.Separator (HORIZONTAL));
-        content.append (simulator_box);
 
         weather_settings_window = new Gtk.Window () {
             title = _("Weather Widlet Settings"),
@@ -1598,79 +1493,6 @@ public class Dock.DynamicWorkspaceIcon : ContainerItem, WorkspaceItem {
             var next = child.get_next_sibling ();
             box.remove (child);
             child = next;
-        }
-    }
-
-    private static int[] get_open_meteo_weather_codes () {
-        return {
-            0, 1, 2, 3,
-            45, 48,
-            51, 53, 55, 56, 57,
-            61, 63, 65, 66, 67,
-            71, 73, 75, 77, 80, 81, 82, 85, 86,
-            95, 96, 99
-        };
-    }
-
-    private static string weather_code_to_preview_label (int weather_code) {
-        switch (weather_code) {
-            case 0:
-                return _("Clear sky");
-            case 1:
-                return _("Mainly clear");
-            case 2:
-                return _("Partly cloudy");
-            case 3:
-                return _("Mostly cloudy");
-            case 45:
-            case 48:
-                return _("Fog");
-            case 51:
-                return _("Light drizzle");
-            case 53:
-                return _("Moderate drizzle");
-            case 55:
-                return _("Dense drizzle");
-            case 56:
-                return _("Light freezing drizzle");
-            case 57:
-                return _("Dense freezing drizzle");
-            case 61:
-                return _("Slight rain");
-            case 63:
-                return _("Moderate rain");
-            case 65:
-                return _("Heavy rain");
-            case 66:
-                return _("Light freezing rain");
-            case 67:
-                return _("Heavy freezing rain");
-            case 71:
-                return _("Slight snow");
-            case 73:
-                return _("Moderate snow");
-            case 75:
-                return _("Heavy snow");
-            case 77:
-                return _("Snow grains");
-            case 80:
-                return _("Slight rain showers");
-            case 81:
-                return _("Moderate rain showers");
-            case 82:
-                return _("Violent rain showers");
-            case 85:
-                return _("Slight snow showers");
-            case 86:
-                return _("Heavy snow showers");
-            case 95:
-                return _("Thunderstorm");
-            case 96:
-                return _("Thunderstorm with slight hail");
-            case 99:
-                return _("Thunderstorm with heavy hail");
-            default:
-                return _("Unknown weather");
         }
     }
 

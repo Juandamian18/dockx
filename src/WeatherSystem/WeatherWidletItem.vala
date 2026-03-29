@@ -667,8 +667,8 @@ public class Dock.WeatherWidletItem : ContainerItem {
     }
 
     private bool is_simulation_enabled () {
-        return dock_settings.settings_schema.has_key (SIM_ENABLED_KEY) &&
-               dock_settings.get_boolean (SIM_ENABLED_KEY);
+        // Hidden for end users: keep weather preview tooling disabled in production.
+        return false;
     }
 
     private string get_temperature_unit () {

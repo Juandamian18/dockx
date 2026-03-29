@@ -19,6 +19,8 @@
     private NowPlayingItem now_playing_item;
     private GLib.GenericArray<WorkspaceIconGroup> icon_groups; // Only used to keep track of icon group indices
     private DynamicWorkspaceIcon dynamic_workspace_item;
+    private const string NOW_PLAYING_WIDLET_KEY = "widlet-now-playing-enabled";
+    private bool now_playing_widlet_enabled = true;
 
 #if WORKSPACE_SWITCHER
     private const string WORKSPACE_WIDLET_KEY = "widlet-workspace-enabled";
@@ -81,6 +83,10 @@
             reposition_items ();
             queue_resize ();
         });
+        if (settings.settings_schema.has_key (NOW_PLAYING_WIDLET_KEY)) {
+            now_playing_widlet_enabled = settings.get_boolean (NOW_PLAYING_WIDLET_KEY);
+            settings.changed[NOW_PLAYING_WIDLET_KEY].connect (update_now_playing_widlet_state);
+        }
 
         icon_groups = new GLib.GenericArray<WorkspaceIconGroup> ();
 
@@ -284,6 +290,7 @@
             AppSystem.get_default ().load.begin ();
             background_item.load ();
             now_playing_item.load ();
+            update_now_playing_widlet_state ();
 #if WORKSPACE_SWITCHER
             WorkspaceSystem.get_default ().load.begin ();
             update_workspace_widlet_state ();
@@ -310,7 +317,7 @@
             position_item (background_item, ref x);
         }
 
-        if (now_playing_item.has_player) {
+        if (now_playing_item.has_player && should_show_now_playing_widlet ()) {
             position_item (now_playing_item, ref x);
         }
 
@@ -428,7 +435,7 @@
             if (background_item.has_apps) {
                 offset += get_item_width (background_item);
             }
-            if (now_playing_item.has_player) {
+            if (now_playing_item.has_player && should_show_now_playing_widlet ()) {
                 offset += get_item_width (now_playing_item);
             }
 #if WORKSPACE_SWITCHER
@@ -536,7 +543,7 @@
             total += get_item_width (background_item);
         }
 
-        if (now_playing_item.has_player) {
+        if (now_playing_item.has_player && should_show_now_playing_widlet ()) {
             total += get_item_width (now_playing_item);
         }
 
@@ -563,6 +570,29 @@
 #else
         return false;
 #endif
+    }
+
+    private bool should_show_now_playing_widlet () {
+        return now_playing_widlet_enabled;
+    }
+
+    private void update_now_playing_widlet_state () {
+        if (settings.settings_schema.has_key (NOW_PLAYING_WIDLET_KEY)) {
+            now_playing_widlet_enabled = settings.get_boolean (NOW_PLAYING_WIDLET_KEY);
+        } else {
+            now_playing_widlet_enabled = true;
+        }
+
+        now_playing_item.visible = now_playing_widlet_enabled;
+        now_playing_item.sensitive = now_playing_widlet_enabled;
+
+        reposition_items ();
+
+        resize_animation.easing = EASE_IN_OUT_QUAD;
+        resize_animation.duration = Granite.TRANSITION_DURATION_OPEN;
+        resize_animation.value_from = get_width ();
+        resize_animation.value_to = get_total_width ();
+        resize_animation.play ();
     }
 
 #if WORKSPACE_SWITCHER

@@ -33,6 +33,12 @@
       <description>When enabled, the workspace widlet section is shown on the right side of the dock.</description>
     </key>
 
+    <key type="b" name="widlet-now-playing-enabled">
+      <default>true</default>
+      <summary>Show now playing widlet</summary>
+      <description>When enabled, the now playing media card is shown in the dock when a player is active.</description>
+    </key>
+
     <key type="b" name="widlet-weather-enabled">
       <default>true</default>
       <summary>Show weather widlet</summary>
