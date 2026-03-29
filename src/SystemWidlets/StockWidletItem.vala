@@ -56,6 +56,7 @@ public class Dock.StockWidletItem : ContainerItem {
     private Gtk.Label details_day_range_value_label;
     private Gtk.Label details_prev_close_value_label;
     private Gtk.Label details_volume_value_label;
+    private Gtk.Overlay card_overlay;
 
     private uint rotation_timeout_id = 0;
     private uint refresh_timeout_id = 0;
@@ -212,15 +213,20 @@ public class Dock.StockWidletItem : ContainerItem {
 
         var content = new Gtk.Overlay () {
             child = new Gtk.Box (HORIZONTAL, 0),
-            overflow = HIDDEN
+            overflow = HIDDEN,
+            valign = FILL,
+            vexpand = true
         };
         content.add_css_class ("stock-widlet-content");
         content.add_overlay (sparkline_area);
         content.set_measure_overlay (sparkline_area, false);
         content.add_overlay (top_content);
         content.set_measure_overlay (top_content, false);
+        card_overlay = content;
 
         child = content;
+        notify["icon-size"].connect (update_size_variant);
+        update_size_variant ();
 
         var details_title = new Gtk.Label (_("Stock Details")) {
             xalign = 0
@@ -1221,6 +1227,15 @@ public class Dock.StockWidletItem : ContainerItem {
         }
 
         return volume.to_string ();
+    }
+
+    private void update_size_variant () {
+        if (card_overlay == null) {
+            return;
+        }
+
+        // Keep stock card height locked to dock icon size so medium is exactly 48px.
+        card_overlay.height_request = icon_size;
     }
 
     private static int64 get_unix_seconds () {
