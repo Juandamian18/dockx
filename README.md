@@ -1,42 +1,111 @@
-# Dock (elementary OS) - Now Playing Edition
+# DockX
 
 [English](README.md) | [Espanol](README.es.md)
 
-Fast app launcher and window switcher for Pantheon, with an integrated **Now Playing** widget in the dock.
+DockX is a rework of the elementary OS Dock (Pantheon), built as a fork and extended with a new widlet system.
 
-## What This Project Is
+It keeps the core dock behavior (launchers, running apps, workspace integration, MPRIS media controls) and adds configurable dock-native mini components.
 
-This repository contains the elementary OS (Pantheon) dock, buildable from source, with a **Now Playing** implementation that lets you:
+## What Is a Widlet?
 
-- See album art, title, and artist for currently playing media.
-- Control `previous`, `play/pause`, and `next` directly from the dock.
-- Use two visual modes: `Normal` (full card) and `Minimal` (cover-only with controls in tooltip).
-- Show a subtle animated cover effect while media is playing (enabled by default, optional).
-- Show a minimal seek bar/progress indicator and seek directly from the dock (enabled by default, optional).
+A **widlet** is a combination of **widget + docklet**.
 
-The widget uses MPRIS, so it works with compatible players (for example Spotify, Rhythmbox, and others).
+A widlet lives inside the dock, adapts to dock icon size, and can provide:
+
+- compact or card-like UI inside the dock
+- hover/click popovers for details
+- per-widlet settings windows
+- enable/disable toggle from the **New Widlet** window
+- up/down ordering inside the widlet area
+
+## Widlets Included
+
+| Widlet | Purpose | Interactions | Settings |
+|---|---|---|---|
+| Now Playing | Current media track, controls, seek | Click/hover controls, context menu | Yes |
+| Weather | Current conditions + forecast | Click opens forecast, optional minimal mode | Yes |
+| Stocks | Rotating list of stock symbols | Click opens details, auto-rotate symbols | Yes |
+| Clipboard | Clipboard status + recent/pinned items | Click opens clipboard history/pinned panel | Yes |
+| CPU | CPU usage meter | Click opens CPU details | Yes (alerts) |
+| RAM | RAM usage meter | Click opens RAM details | Yes (alerts) |
+| CPU Temp | CPU temperature meter | Click opens temperature details | Yes (alerts) |
+| GPU | GPU usage meter | Click opens GPU details | Yes (alerts) |
+| Hard Disk | Disk activity meter | Click opens disk activity details | Yes (alerts) |
+| Trash | Empty/full trash state | Left click opens Trash, right click empty | No |
+| Workspace Widlet | Workspace section + New Widlet entrypoint | Left click opens widlet manager, right click create workspace | Basic |
 
 ## Screenshots
 
-### Normal Mode
+### New Widlet Window
+
+![New Widlet window](docs/images/new%20widlet.png)
+
+### Weather Widlet
+
+![Weather widlet normal](docs/images/weather%20widlet/normal.png)
+![Weather widlet minimal](docs/images/weather%20widlet/minimal.png)
+![Weather widlet forecast popup](docs/images/weather%20widlet/popup.png)
+
+### Stocks Widlet
+
+![Stocks widlet](docs/images/stocks%20widlet/stock.png)
+
+### Clipboard Widlet
+
+![Clipboard widlet](docs/images/clipboard%20widlet/clipboard.png)
+![Clipboard widlet popup](docs/images/clipboard%20widlet/popup.png)
+
+### PC Widlets (CPU/RAM/Temp/GPU/Disk)
+
+![PC widlets](docs/images/pc%20widlets/all.png)
+![PC widlets popup](docs/images/pc%20widlets/popup.png)
+
+### Trash Widlet
+
+![Trash widlet empty](docs/images/trash%20widlet/empty.png)
+![Trash widlet full](docs/images/trash%20widlet/full.png)
+
+### Now Playing (Current Implementation)
 
 ![Now Playing normal mode](docs/images/normal-mode.png)
-
-### Minimal Mode
-
 ![Now Playing minimal mode](docs/images/minimal-mode.png)
-
-### Seek Bar
-
 ![Now Playing seek bar](docs/images/seek-bar.png)
+![Now Playing animation](docs/images/animation.gif)
 
-### Cover Animation
+## APIs And External Resources
 
-![Now Playing cover animation](docs/images/animation.gif)
+DockX currently uses these network APIs/resources:
+
+- Open-Meteo Forecast API (weather current + daily forecast)
+  - `https://api.open-meteo.com/v1/forecast`
+- Open-Meteo Geocoding API (city -> lat/lon)
+  - `https://geocoding-api.open-meteo.com/v1/search`
+- Yahoo Finance chart endpoints (quotes/trend data)
+  - `https://query2.finance.yahoo.com/v8/finance/chart/...`
+  - `https://query1.finance.yahoo.com/v8/finance/chart/...`
+- TradingView scanner/logos (stock logo resolution)
+  - `https://scanner.tradingview.com/america/scan`
+  - `https://s3-symbol-logo.tradingview.com/...`
+- Stock logo fallback providers
+  - `https://financialmodelingprep.com/image-stock/...`
+  - `https://eodhd.com/img/logos/US/...`
+
+UI/icon resources:
+
+- Weather icon pack source used for weather widlet assets:
+  - `https://www.figma.com/community/file/1469636700953030456`
+- Lucide icon set (for consistent New Widlet UI actions/icons):
+  - `https://lucide.dev/`
+
+System integrations:
+
+- MPRIS (DBus) for Now Playing media state and controls
+- GLib notifications for threshold-based widlet alerts
+- Local Linux system files (`/proc`, `/sys`) and optional `nvidia-smi` for system metrics
 
 ## Requirements
 
-For elementary OS/Ubuntu builds:
+Build dependencies (elementary OS / Ubuntu):
 
 - `meson`
 - `ninja-build`
@@ -48,7 +117,7 @@ For elementary OS/Ubuntu builds:
 - `libx11-dev`
 - `libwayland-dev`
 
-Install dependencies:
+Install:
 
 ```bash
 sudo apt update
@@ -58,172 +127,108 @@ sudo apt install -y \
   libsoup-3.0-dev libx11-dev libwayland-dev
 ```
 
-## Step-By-Step Installation (Recommended, User-Local)
+Runtime notes:
 
-### 1. Clone the repository
+- Internet connection is required for Weather and Stocks widlets.
+- `nvidia-smi` is optional but improves GPU usage detection on NVIDIA systems.
+- A MPRIS-compatible player is required for Now Playing.
+
+## Build And Replace Your Current Dock (User-Local)
+
+### 1. Clone
 
 ```bash
-git clone https://github.com/Juandamian18/Dock-with-Now-Playing.git
-cd Dock-with-Now-Playing
+git clone https://github.com/Juandamian18/dockx.git
+cd dockx
 ```
 
-If you already cloned it:
+### 2. Configure Meson prefix to your local user path
 
 ```bash
-git pull
-```
-
-### 2. Configure build directory
-
-```bash
-meson setup build --prefix=/usr
+meson setup build --prefix="$HOME/.local"
 ```
 
 If `build` already exists:
 
 ```bash
-meson setup build --reconfigure --prefix=/usr
+meson setup build --reconfigure --prefix="$HOME/.local"
 ```
 
-### 3. Build
+### 3. Compile
 
 ```bash
-ninja -C build
+meson compile -C build
 ```
 
-### 4. Install this build only for your user (recommended)
-
-This avoids touching system binaries and keeps an automatic backup:
+### 4. Install
 
 ```bash
-set -euo pipefail
-mkdir -p "$HOME/.local/bin" "$HOME/.local/bin/backups"
-
-if [ -f "$HOME/.local/bin/io.elementary.dock" ]; then
-  ts="$(date +%Y%m%d-%H%M%S)"
-  cp -a "$HOME/.local/bin/io.elementary.dock" \
-    "$HOME/.local/bin/backups/io.elementary.dock.$ts"
-fi
-
-install -m 0755 build/src/io.elementary.dock "$HOME/.local/bin/io.elementary.dock"
+meson install -C build
 ```
 
-### 5. Restart the dock
+### 5. Restart dock process
 
 ```bash
 pkill -f '^io.elementary.dock$' || true
 ```
 
-The process should auto-start again.
-
-### 6. Verify that your local binary is being used
+### 6. Verify binary path
 
 ```bash
 which io.elementary.dock
 ```
 
-Expected output:
+Expected path:
 
 ```text
 /home/your-user/.local/bin/io.elementary.dock
 ```
 
-## Global Installation (Optional)
+## Daily Development Loop
 
-If you want to install system-wide:
+After each code change:
 
 ```bash
-sudo ninja -C build install
+meson compile -C build
+meson install -C build
 pkill -f '^io.elementary.dock$' || true
 ```
 
-Note: this overwrites the package-installed binary and may be reverted by system updates.
+## First Run: Managing Widlets
 
-## Using Now Playing
+- Click the `+` dock item to open **New Widlet**.
+- Toggle widlets on/off with each row switch.
+- Reorder with up/down arrows.
+- Open widlet-specific settings using the settings icon (only shown when that widlet has settings).
+- Right click the `+` item and choose **Create Workspace**.
 
-### Normal Mode
+## Optional Helper Script
 
-- Shown as a full card in the dock.
-- Album-art background with dark overlay for text readability.
-- Inline controls (`previous`, `play/pause`, `next`).
-- Optional inline seek bar (progress + seeking).
-
-### Minimal Mode
-
-- Shows only square cover art at icon size.
-- Hover opens tooltip with track info, controls, and optional seek bar.
-
-How to enable it:
-
-1. Start playback in a compatible player (so the Now Playing item appears in the dock).
-2. Right click the Now Playing item (cover/card in the dock).
-3. Click `Minimal Mode` in the context menu.
-
-How to disable it:
-
-1. Right click the Now Playing item again.
-2. Click `Minimal Mode` to untoggle it.
-
-### Context Menu Options
-
-Right click the Now Playing item to toggle:
-
-- `Minimal Mode`: cover-only icon + interactive tooltip.
-- `Cover Animation`: subtle automatic cover movement while playing.
-- `Seek Bar`: progress bar and scrubbing controls.
-
-### Behavior
-
-- If no compatible media player is active, Now Playing hides itself.
-- If the player closes, the item disappears automatically.
-- `Cover Animation` and `Seek Bar` are enabled by default and persisted in settings.
-
-## Restore Original Dock
-
-### Option A: remove local override
+To prefetch TradingView stock logos into cache:
 
 ```bash
-rm -f "$HOME/.local/bin/io.elementary.dock"
-pkill -f '^io.elementary.dock$' || true
-```
-
-### Option B: restore latest local backup
-
-```bash
-latest_backup="$(ls -1t "$HOME/.local/bin/backups"/io.elementary.dock.* 2>/dev/null | head -n1)"
-if [ -n "${latest_backup:-}" ]; then
-  cp -a "$latest_backup" "$HOME/.local/bin/io.elementary.dock"
-  pkill -f '^io.elementary.dock$' || true
-fi
-```
-
-## Development
-
-Build after changes:
-
-```bash
-ninja -C build
-```
-
-Run tests (if your environment includes them):
-
-```bash
-ninja -C build test
-```
-
-Lint (same as CI):
-
-```bash
-io.elementary.vala-lint -d .
+./scripts/prefetch_tradingview_stock_logos.sh
 ```
 
 ## Relevant Project Structure
 
-- `src/MediaSystem/NowPlayingItem.vala`: Now Playing UI and behavior.
-- `src/MediaSystem/MediaMonitor.vala`: MPRIS integration and playback state.
-- `src/ItemManager.vala`: item integration in dock layout.
-- `data/Application.css`: dock and widget styles.
-- `data/dock.gschema.xml`: settings keys (includes minimal mode, cover animation, and seek bar).
+- `src/ItemManager.vala`: widlet orchestration, ordering, layout, enable/disable state
+- `src/WorkspaceSystem/DynamicWorkspaceItem.vala`: New Widlet window + widlet settings windows
+- `src/WeatherSystem/WeatherWidletItem.vala`: weather card/minimal mode + forecast popover
+- `src/SystemWidlets/StockWidletItem.vala`: stocks data, rotation, logos, details
+- `src/SystemWidlets/ClipboardWidletItem.vala`: clipboard history + pinned text behavior
+- `src/SystemWidlets/*WidletItem.vala`: CPU/RAM/Temp/GPU/Disk/Trash widlets
+- `src/MediaSystem/NowPlayingItem.vala`: now playing card/minimal mode controls
+- `data/Application.css`: all widlet visual styling
+- `data/dock.gschema.xml`: widlet settings keys and defaults
+- `data/weather-icons/`: weather icon assets
+- `data/widlet-icons/`: custom widlet icon assets
+
+## Base Project
+
+DockX is based on the elementary OS Dock project:
+
+- `https://github.com/elementary/dock`
 
 ## License
 
